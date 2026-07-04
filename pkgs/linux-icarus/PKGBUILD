@@ -1,0 +1,103 @@
+# Maintainer: Icarus-ArchOS
+# Kernel version: 7.2-rc1 (Mainline Release Candidate)
+# Custom minimal configuration for Intel Iris Xe hardware.
+# Applied on top of 'make defconfig':
+#   CONFIG_LOCALVERSION="-icarus"
+#   CONFIG_DEBUG_INFO_BTF=y
+#   CONFIG_DRM_I915=y
+#   CONFIG_DRM_XE=m
+#   CONFIG_ZRAM=y
+#   CONFIG_ZSMALLOC=y
+#   CONFIG_BTRFS_FS=y
+#   CONFIG_BLK_DEV_NVME=y
+#   CONFIG_FUSE_FS=y
+#   CONFIG_BLK_DEV_INITRD=y
+#   CONFIG_NTSYNC=m
+#
+# NOTE ON VERSIONING: 7.2-rc1 is a release candidate. Hyphens are illegal
+# in the official pkgver variable for makepkg, so we use a dot notation split
+# to declare versioning states cleanly.
+
+pkgbase=linux-icarus
+pkgname=(linux-icarus linux-icarus-headers)
+pkgver=7.2.rc1
+_pkgver=7.2-rc1
+pkgrel=1
+arch=(x86_64)
+url="https://www.kernel.org"
+license=(GPL2)
+makedepends=('bc' 'libelf' 'pahole' 'kmod' 'openssl' 'bison' 'flex')
+options=('!strip')
+source=("https://git.kernel.org/torvalds/t/linux-${_pkgver}.tar.gz")
+sha256sums=('b460e74cfa0a428416881063821ef6aae8a6a4c69891b9ab10fcf4edf770ce0d')
+
+prepare() {
+  cd "${srcdir}/linux-${_pkgver}"
+  make defconfig
+  scripts/config --enable CONFIG_DEBUG_INFO_BTF
+  scripts/config --enable CONFIG_DRM_I915
+  scripts/config --module CONFIG_DRM_XE
+  scripts/config --enable CONFIG_ZRAM
+  scripts/config --enable CONFIG_ZSMALLOC
+  scripts/config --enable CONFIG_BTRFS_FS
+  scripts/config --enable CONFIG_BLK_DEV_NVME
+  scripts/config --enable CONFIG_FUSE_FS
+  scripts/config --enable CONFIG_BLK_DEV_INITRD
+  scripts/config --module CONFIG_NTSYNC
+  scripts/config --set-str CONFIG_LOCALVERSION "-icarus"
+  make olddefconfig
+}
+
+build() {
+  cd "${srcdir}/linux-${_pkgver}"
+  make $MAKEFLAGS bzImage modules
+}
+
+_package() {
+  local pkgdir="$1"
+  cd "${srcdir}/linux-${_pkgver}"
+  KERNELRELEASE=$(cat include/config/kernel.release)
+  make INSTALL_MOD_PATH="$pkgdir/usr" modules_install
+  install -Dm644 arch/x86/boot/bzImage "$pkgdir/boot/vmlinuz-linux-icarus"
+  install -Dm644 arch/x86/boot/bzImage "$pkgdir/usr/lib/modules/${KERNELRELEASE}/vmlinuz"
+  
+  # Remove temporary development paths before packaging
+  rm -f "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build"
+  rm -f "$pkgdir/usr/lib/modules/${KERNELRELEASE}/source"
+}
+
+package_linux-icarus() {
+  _package "$pkgdir"
+  cd "${srcdir}/linux-${_pkgver}"
+  KERNELRELEASE=$(cat include/config/kernel.release)
+  mkdir -p "$pkgdir/etc/mkinitcpio.d"
+  cat > "$pkgdir/etc/mkinitcpio.d/linux-icarus.preset" << EOF
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="/usr/lib/modules/${KERNELRELEASE}/vmlinuz"
+PRESETS=('default')
+default_image="/boot/initramfs-linux-icarus.img"
+default_options=""
+EOF
+}
+
+package_linux-icarus-headers() {
+  cd "${srcdir}/linux-${_pkgver}"
+  KERNELRELEASE=$(cat include/config/kernel.release)
+  make headers_install ARCH=x86_64 INSTALL_HDR_PATH="$pkgdir/usr"
+  mkdir -p "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build"
+  cp -a \
+    .config \
+    Kconfig Kbuild Makefile \
+    Module.symvers \
+    System.map \
+    vmlinux \
+    arch/x86/ \
+    include/ \
+    scripts/ \
+    tools/ \
+    kernel/ \
+    "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build/"
+  
+  # Maintained as a relative link path to resolve clean target mounting loops
+  ln -s build "$pkgdir/usr/lib/modules/${KERNELRELEASE}/source"
+}
