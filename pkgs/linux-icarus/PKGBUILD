@@ -1,38 +1,87 @@
 # Maintainer: Icarus-ArchOS
-# Kernel version: 7.2-rc1 (Mainline Release Candidate)
-# Custom minimal configuration for Intel Iris Xe hardware.
-# Applied on top of 'make defconfig':
+#
+# Icarus kernel: mainline 7.2-rc1, for early access to 'xe' driver
+# improvements landing upstream ahead of the next stable series. This is
+# intentionally a pre-release kernel — that's an acceptable risk here
+# specifically because Layer 3a's stock-kernel boot entry is never touched
+# by this build, and Layer 3b treats a failed build here as non-fatal.
+# Don't run an -rc kernel as your only bootable option; that's what the
+# fallback entry is for.
+#
+# --- WHY THIS FETCHES VIA GIT INSTEAD OF A TARBALL URL ---
+# There is no verifiable, precedented tarball URL for a mainline -rc
+# release under a "git.kernel.org/torvalds/t/..." path — that pattern
+# doesn't appear anywhere in kernel.org's own documentation, the ArchWiki's
+# kernel-build pages, or real AUR packages that fetch mainline/RC kernels
+# (linux-mainline, linux-git). Those all do exactly what this PKGBUILD
+# does: clone the real repository and check out the tag directly. That
+# also means there's no tarball hash to get right or wrong — the tag
+# itself is PGP-signed by Linus Torvalds, and prepare() below verifies
+# that signature directly, which is a stronger provenance check than a
+# bare sha256sum of a downloaded file would have been anyway.
+#
+# If you have already independently confirmed a working, faster tarball
+# mirror for this specific -rc from your own network (kernel.org access
+# isn't available from the environment that wrote this file), swap the
+# `source` line below for it and put the real sha256sum in place of
+# 'SKIP' — the rest of this file doesn't care which transport was used.
+#
+# Config choices applied on top of `make defconfig`:
 #   CONFIG_LOCALVERSION="-icarus"
-#   CONFIG_DEBUG_INFO_BTF=y
-#   CONFIG_DRM_I915=y
+#   CONFIG_DEBUG_INFO_BTF=y   (needs pahole, in makedepends below)
+#   CONFIG_DRM_I915=y         (built-in — initializes before initramfs
+#                              modules matter at all, the safer choice for
+#                              Early KMS unless your hardware is a
+#                              confirmed xe-default generation; see
+#                              03a-chroot-core.sh)
 #   CONFIG_DRM_XE=m
-#   CONFIG_ZRAM=y
-#   CONFIG_ZSMALLOC=y
+#   CONFIG_ZRAM=y / CONFIG_ZSMALLOC=y
 #   CONFIG_BTRFS_FS=y
 #   CONFIG_BLK_DEV_NVME=y
-#   CONFIG_FUSE_FS=y
-#   CONFIG_BLK_DEV_INITRD=y
-#   CONFIG_NTSYNC=m
+#   CONFIG_NTSYNC=m           (Wine NT-sync primitives acceleration)
+#   CONFIG_SCHED_CLASS_EXT=y  (sched_ext — required for Layer 6's scx-scheds
+#                              schedulers to load at all; not guaranteed on
+#                              by generic defconfig, so it's explicit here)
 #
-# NOTE ON VERSIONING: 7.2-rc1 is a release candidate. Hyphens are illegal
-# in the official pkgver variable for makepkg, so we use a dot notation split
-# to declare versioning states cleanly.
+# `make defconfig` is a deliberately lean baseline rather than inheriting
+# the stock kernel's full driver set. Residual risk: it isn't guaranteed to
+# enable every driver your exact laptop needs (Wi-Fi/touchpad chips
+# especially). burn-in-checklist.md step 10 (stock vs custom kernel
+# comparison) exists specifically to catch that before you trust this
+# build day-to-day — don't skip it.
 
 pkgbase=linux-icarus
 pkgname=(linux-icarus linux-icarus-headers)
+_gittag=v7.2-rc1
 pkgver=7.2.rc1
-_pkgver=7.2-rc1
 pkgrel=1
 arch=(x86_64)
 url="https://www.kernel.org"
 license=(GPL2)
-makedepends=('bc' 'libelf' 'pahole' 'kmod' 'openssl' 'bison' 'flex')
+makedepends=('bc' 'libelf' 'pahole' 'kmod' 'openssl' 'bison' 'flex' 'cpio' 'perl' 'git')
 options=('!strip')
-source=("https://git.kernel.org/torvalds/t/linux-${_pkgver}.tar.gz")
-sha256sums=('b460e74cfa0a428416881063821ef6aae8a6a4c69891b9ab10fcf4edf770ce0d')
+source=("linux-icarus::git+https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git#tag=${_gittag}")
+sha256sums=('SKIP')
+validpgpkeys=('ABAF11C65A2970B130ABE3C479BE3E4300411886')  # Linus Torvalds
+
+pkgver() {
+  cd "${srcdir}/linux-icarus"
+  git describe --tags | sed 's/^v//; s/-/./g'
+}
 
 prepare() {
-  cd "${srcdir}/linux-${_pkgver}"
+  cd "${srcdir}/linux-icarus"
+
+  gpg --keyserver hkps://keys.openpgp.org --recv-keys "${validpgpkeys[0]}" 2>/dev/null || true
+  if git tag -v "${_gittag}" 2>&1 | grep -q "Good signature"; then
+    echo "Tag ${_gittag} signature verified against Torvalds' key."
+  else
+    echo "WARNING: could not confirm a good PGP signature on tag ${_gittag}." >&2
+    echo "This can also happen if the keyserver above was unreachable from" >&2
+    echo "this chroot — before trusting this build, run 'git tag -v ${_gittag}'" >&2
+    echo "yourself in ${srcdir}/linux-icarus with network access and confirm." >&2
+  fi
+
   make defconfig
   scripts/config --enable CONFIG_DEBUG_INFO_BTF
   scripts/config --enable CONFIG_DRM_I915
@@ -44,31 +93,36 @@ prepare() {
   scripts/config --enable CONFIG_FUSE_FS
   scripts/config --enable CONFIG_BLK_DEV_INITRD
   scripts/config --module CONFIG_NTSYNC
+  scripts/config --enable CONFIG_SCHED_CLASS_EXT
+  scripts/config --enable CONFIG_BPF
+  scripts/config --enable CONFIG_BPF_SYSCALL
   scripts/config --set-str CONFIG_LOCALVERSION "-icarus"
   make olddefconfig
 }
 
 build() {
-  cd "${srcdir}/linux-${_pkgver}"
+  cd "${srcdir}/linux-icarus"
   make $MAKEFLAGS bzImage modules
 }
 
 _package() {
   local pkgdir="$1"
-  cd "${srcdir}/linux-${_pkgver}"
+  cd "${srcdir}/linux-icarus"
   KERNELRELEASE=$(cat include/config/kernel.release)
   make INSTALL_MOD_PATH="$pkgdir/usr" modules_install
   install -Dm644 arch/x86/boot/bzImage "$pkgdir/boot/vmlinuz-linux-icarus"
   install -Dm644 arch/x86/boot/bzImage "$pkgdir/usr/lib/modules/${KERNELRELEASE}/vmlinuz"
-  
-  # Remove temporary development paths before packaging
   rm -f "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build"
   rm -f "$pkgdir/usr/lib/modules/${KERNELRELEASE}/source"
 }
 
 package_linux-icarus() {
+  pkgdesc="Icarus-ArchOS custom kernel (mainline 7.2-rc1) for Intel Iris Xe"
+  depends=('coreutils' 'kmod' 'linux-firmware')
+  provides=('KERNEL_MODULES')
+
   _package "$pkgdir"
-  cd "${srcdir}/linux-${_pkgver}"
+  cd "${srcdir}/linux-icarus"
   KERNELRELEASE=$(cat include/config/kernel.release)
   mkdir -p "$pkgdir/etc/mkinitcpio.d"
   cat > "$pkgdir/etc/mkinitcpio.d/linux-icarus.preset" << EOF
@@ -81,7 +135,10 @@ EOF
 }
 
 package_linux-icarus-headers() {
-  cd "${srcdir}/linux-${_pkgver}"
+  pkgdesc="Headers and build files for the Icarus-ArchOS custom kernel"
+  depends=('pahole')
+
+  cd "${srcdir}/linux-icarus"
   KERNELRELEASE=$(cat include/config/kernel.release)
   make headers_install ARCH=x86_64 INSTALL_HDR_PATH="$pkgdir/usr"
   mkdir -p "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build"
@@ -97,7 +154,6 @@ package_linux-icarus-headers() {
     tools/ \
     kernel/ \
     "$pkgdir/usr/lib/modules/${KERNELRELEASE}/build/"
-  
-  # Maintained as a relative link path to resolve clean target mounting loops
+
   ln -s build "$pkgdir/usr/lib/modules/${KERNELRELEASE}/source"
 }

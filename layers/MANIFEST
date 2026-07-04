@@ -1,0 +1,29 @@
+# layers/MANIFEST
+#
+# One line per layer, read in order by icarus-assemble.sh. Format:
+#   sentinel_name:context:failure_mode:script_filename
+#
+#   sentinel_name   — used for the .done sentinel file and --resume checks.
+#   context         — "host" (runs on the live ISO) or "chroot" (runs via
+#                     arch-chroot /mnt).
+#   failure_mode    — "fatal" (abort the whole assembly if this layer
+#                     fails) or "soft" (log a warning and continue —
+#                     use this for anything where a working system must
+#                     survive this layer failing, like an experimental
+#                     kernel build).
+#   script_filename — path relative to layers/.
+#
+# To add a new layer: write layers/NN-your-layer.sh following the
+# conventions in layers/TEMPLATE.sh, add one line below, done. The
+# conductor doesn't need to change. Lines starting with # are comments;
+# blank lines are ignored.
+
+layer-1-partition:host:fatal:01-live-partition.sh
+layer-2-base:host:fatal:02-base-install.sh
+layer-3a-core:chroot:fatal:03a-chroot-core.sh
+layer-3b-kernel:chroot:soft:03b-custom-kernel.sh
+layer-3c-daemons:chroot:fatal:03c-daemons.sh
+layer-4-graphics:chroot:fatal:04-graphics.sh
+layer-5-ui-winhybrid:chroot:fatal:05-ui-winhybrid.sh
+layer-6-ai-engineering-perf:chroot:soft:06-ai-engineering-perf.sh
+layer-7-native-apps:chroot:soft:07-native-apps.sh

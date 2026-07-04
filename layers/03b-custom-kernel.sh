@@ -28,7 +28,7 @@ ICARUS_REPO_PATH="${ICARUS_REPO_PATH:-/usr/usr_src/icarus-archos}"
 SENTINEL="${ICARUS_LOG_DIR}/layer-3b-kernel.done"
 PREV_SENTINEL="${ICARUS_LOG_DIR}/layer-3a-core.done"
 
-TARGET=""
+TARGET="${ICARUS_TARGET_DEVICE:-}"
 
 log() { echo "[layer-3b] $*"; }
 warn_and_exit_gracefully() {

@@ -1,0 +1,87 @@
+/*
+ * icarus-spotlight.rasi
+ * A Spotlight-style rofi theme for Icarus-ArchOS.
+ * Installed system-wide to /usr/share/rofi/themes/ so bare `-theme
+ * icarus-spotlight` invocations resolve correctly.
+ */
+
+* {
+    bg:          rgba(20, 20, 20, 0.85);
+    bg-alt:      rgba(255, 255, 255, 0.06);
+    fg:          #ffffff;
+    fg-dim:      rgba(255, 255, 255, 0.55);
+    accent:      #a0a0a0;
+
+    background-color: transparent;
+    text-color:       @fg;
+    font:             "JetBrainsMono Nerd Font 13";
+}
+
+window {
+    location:     north;
+    anchor:       north;
+    y-offset:     18%;
+    width:        640px;
+    background-color: @bg;
+    border:       1px;
+    border-color: rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    padding:      4px;
+}
+
+mainbox {
+    background-color: transparent;
+    children: [ inputbar, listview ];
+    spacing: 8px;
+    padding: 10px;
+}
+
+inputbar {
+    background-color: transparent;
+    children: [ prompt, entry ];
+    spacing: 8px;
+    padding: 6px 10px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color: @fg-dim;
+}
+
+entry {
+    background-color: transparent;
+    text-color: @fg;
+    placeholder: "Search...";
+    placeholder-color: @fg-dim;
+}
+
+listview {
+    background-color: transparent;
+    lines: 8;
+    spacing: 2px;
+    scrollbar: false;
+    fixed-height: false;
+}
+
+element {
+    background-color: transparent;
+    text-color: @fg;
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+
+element selected {
+    background-color: @bg-alt;
+    text-color: @fg;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+    vertical-align: 0.5;
+}
+
+element-icon {
+    size: 22px;
+    padding: 0 8px 0 0;
+}

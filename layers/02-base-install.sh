@@ -11,7 +11,7 @@ ICARUS_REPO_PATH="${ICARUS_REPO_PATH:-$(cd "$(dirname "$(readlink -f "$0")")/.."
 SENTINEL="${ICARUS_LOG_DIR}/layer-2-base.done"
 PREV_SENTINEL="${ICARUS_LOG_DIR}/layer-1-partition.done"
 
-TARGET=""
+TARGET="${ICARUS_TARGET_DEVICE:-}"
 
 log() { echo "[layer-2] $*"; }
 fatal() { echo "[layer-2] FATAL: $*" >&2; exit 1; }

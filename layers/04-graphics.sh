@@ -30,6 +30,11 @@ pacman -S --noconfirm --needed \
     libvdpau-va-gl \
     lib32-mesa lib32-vulkan-intel
 
+log "Installing hardware monitoring / burn-in test tools..."
+pacman -S --noconfirm --needed \
+    stress-ng lm_sensors power-profiles-daemon upower
+systemctl enable power-profiles-daemon.service
+
 # ---------------------------------------------------------------------------
 # /etc/environment
 #

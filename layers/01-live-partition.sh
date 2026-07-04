@@ -9,9 +9,9 @@ set -euo pipefail
 ICARUS_LOG_DIR="${ICARUS_LOG_DIR:-/mnt/var/log/icarus}"
 SENTINEL="${ICARUS_LOG_DIR}/layer-1-partition.done"
 
-TARGET=""
-ALLOW_INTERNAL=0
-REDUNDANT_METADATA=0
+TARGET="${ICARUS_TARGET_DEVICE:-}"
+ALLOW_INTERNAL="${ICARUS_ALLOW_INTERNAL:-0}"
+REDUNDANT_METADATA="${ICARUS_REDUNDANT_METADATA:-0}"
 
 log() { echo "[layer-1] $*"; }
 fatal() { echo "[layer-1] FATAL: $*" >&2; exit 1; }
@@ -79,8 +79,12 @@ fi
 EFI_PART="${TARGET}${PART_SUFFIX}1"
 ROOT_PART="${TARGET}${PART_SUFFIX}2"
 
-# --- Safety: recursively unmount any existing mounts on target device partitions ---
-log "Unmounting any existing filesystems on target device..."
+# Unmount anything already mounted from this device first — a re-run, an
+# auto-mounted partition from a prior session, or the desktop environment
+# mounting it on insert would otherwise make sgdisk/mkfs fail with
+# "device or resource busy" instead of the guards above catching the real
+# problem.
+log "Unmounting any existing filesystems on ${TARGET}..."
 umount -R "${TARGET}"* 2>/dev/null || true
 
 log "Wiping partition table..."
@@ -115,9 +119,12 @@ fi
 log "Creating subvolumes..."
 mount "$ROOT_PART" /mnt
 
-# Explicit guard: remove any pre-existing subvolumes (should not exist on fresh fs, but safe for idempotency)
+# Idempotency guard: harmless in the normal flow (mkfs.btrfs -f just above
+# already wipes any prior subvolumes), but protects anyone who invokes this
+# layer script standalone against a fresh mkfs — e.g. while debugging a
+# single layer without re-running the whole install from scratch.
 for sv in @ @home @cache @log; do
-    if btrfs subvolume list /mnt | grep -q " path ${sv}$"; then
+    if btrfs subvolume list /mnt | grep -q " path ${sv}\$"; then
         log "Removing pre-existing subvolume: ${sv}"
         btrfs subvolume delete "/mnt/${sv}"
     fi

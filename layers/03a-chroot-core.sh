@@ -10,9 +10,9 @@ ICARUS_LOG_DIR="${ICARUS_LOG_DIR:-/var/log/icarus}"
 SENTINEL="${ICARUS_LOG_DIR}/layer-3a-core.done"
 PREV_SENTINEL="${ICARUS_LOG_DIR}/layer-2-base.done"
 
-TARGET=""
-FORCE_XE=0
-DISABLE_MITIGATIONS=0
+TARGET="${ICARUS_TARGET_DEVICE:-}"
+FORCE_XE="${ICARUS_FORCE_XE:-0}"
+DISABLE_MITIGATIONS="${ICARUS_DISABLE_MITIGATIONS:-0}"
 
 log() { echo "[layer-3a] $*"; }
 fatal() { echo "[layer-3a] FATAL: $*" >&2; exit 1; }

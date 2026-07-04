@@ -4,6 +4,8 @@ Post-install validation plan — 18 steps covering boot reliability, suspend/res
 
 > **Instructions:** Run each step sequentially on the target hardware after a fresh Icarus-ArchOS install. Mark each step **PASS** or **FAIL** before continuing. Any **FAIL** should be investigated and resolved before the system is considered production-ready.
 
+> **Prerequisite tools:** `stress-ng`, `lm_sensors` (for `sensors`), and `power-profiles-daemon` (for `powerprofilesctl`) are installed and enabled by `layers/04-graphics.sh`. Run `sudo sensors-detect` once before step 9 if `sensors` reports no chips found — that step is interactive and can't be scripted into the installer.
+
 ---
 
 ## Boot Reliability

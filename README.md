@@ -9,22 +9,28 @@ Hyprland desktop and native (non-XWayland) Wine application support.
 ```
 icarus-archos/
 ├── icarus-assemble.sh              # Master conductor — run this
+├── ROADMAP.md                      # Read before adding new customization
+├── burn-in-checklist.md            # Post-install validation plan — run before trusting this as your only OS
 ├── layers/
+│   ├── MANIFEST                    # Ordered layer list the conductor reads — add a line here for new layers
+│   ├── TEMPLATE.sh                 # Copy this to start a new layer
 │   ├── 01-live-partition.sh        # Host: wipe + partition + Btrfs subvolumes
 │   ├── 02-base-install.sh          # Host: pacstrap + fstab + stage repo
 │   ├── 03a-chroot-core.sh          # Chroot: locale/user/stock kernel/boot — guaranteed bootable
 │   ├── 03b-custom-kernel.sh        # Chroot: build linux-icarus (non-fatal on failure)
 │   ├── 03c-daemons.sh              # Chroot: NetworkManager, resolved, fstrim
-│   ├── 04-graphics.sh              # Chroot: Mesa/VA-API/VDPAU, multilib
-│   └── 05-ui-winhybrid.sh          # Chroot: Hyprland/Waybar/Wine stack
+│   ├── 04-graphics.sh              # Chroot: Mesa/VA-API/VDPAU, multilib, burn-in tools
+│   ├── 05-ui-winhybrid.sh          # Chroot: Hyprland/Waybar/Wine/greetd stack
+│   ├── 06-ai-engineering-perf.sh   # Chroot (soft): iGPU compute stack, sched_ext, memory/thermal tuning, dev tooling
+│   └── 07-native-apps.sh           # Chroot (soft): Chromium/Chrome, paru bootstrap, LibreOffice
 ├── configs/
 │   ├── hypr/hyprland.conf
 │   ├── waybar/config.jsonc
 │   ├── waybar/style.css
+│   ├── rofi/icarus-spotlight.rasi
 │   └── wine/wine-wayland.sh
 └── pkgs/
-    └── linux-icarus/PKGBUILD       # YOU must provide this — your kernel config/patches.
-                                     # Layer 3b skips gracefully if it's missing.
+    └── linux-icarus/PKGBUILD       # Real now — mainline 7.2-rc1 via git+tag, see file header
 ```
 
 ## Usage
@@ -53,6 +59,15 @@ Useful flags:
 
 If it dies partway through, fix the reported problem and re-run with
 `--resume` — completed layers are skipped.
+
+Layers are read from `layers/MANIFEST` in order — the conductor doesn't
+hardcode the sequence. Adding future customization means writing a new
+`layers/NN-name.sh` (copy `layers/TEMPLATE.sh`) and adding one line to the
+manifest, not editing `icarus-assemble.sh`. See `ROADMAP.md` before adding
+anything, especially once this starts getting genuinely complex — it has
+the actual conventions (idempotency, fatal-vs-soft failure) and a backlog
+of where half-formed ideas should go instead of getting wedged into
+whichever layer happens to be open at the time.
 
 ## What changed from the earlier draft, and why
 
@@ -121,6 +136,112 @@ achieve. Fixed here:
 - `layers/05-ui-winhybrid.sh` now installs `libxkbcommon` and
   `lib32-libxkbcommon`, which Wine's native Wayland driver needs for
   keyboard input mapping.
+- **`layers/05-ui-winhybrid.sh` now actually gets you to a desktop.**
+  Two things were missing before: (1) `hyprland.conf` referenced a Rofi
+  theme called `icarus-spotlight` that was never actually written anywhere
+  — now shipped at `configs/rofi/icarus-spotlight.rasi` and installed to
+  `/usr/share/rofi/themes/`. (2) There was no display manager, so boot would
+  have landed at a bare TTY with nothing launching Hyprland. `greetd` +
+  `greetd-tuigreet` (both official Arch `extra` packages, no AUR needed) are
+  now installed and configured to present a login screen that launches
+  Hyprland on successful auth. Pipewire's user services are also explicitly
+  enabled globally rather than assumed to auto-enable via packaging presets.
+
+## Merged from a manually-edited copy
+
+Two real fixes came in from a separately edited copy of this repo and are
+now merged in:
+
+- `layers/01-live-partition.sh` unmounts anything already mounted on the
+  target device before wiping it (`umount -R`), so a re-run or an
+  auto-mounted partition fails cleanly at the guard checks instead of
+  making `sgdisk`/`mkfs` error out with "device busy". It also removes any
+  pre-existing subvolumes before creating new ones — mostly a no-op given
+  `mkfs.btrfs -f` already wipes everything just before this runs, but it's
+  free insurance if this layer is ever invoked standalone during debugging.
+- `layers/02-base-install.sh` now overwrites `/etc/fstab` via `genfstab -U
+  /mnt > /mnt/etc/fstab` instead of appending, so re-running Layer 2 can't
+  produce duplicate fstab entries.
+
+Two new files also came in, one of which needed real fixes before it was
+safe to build with:
+
+- **`burn-in-checklist.md`** — an 18-step post-install validation plan
+  (boot reliability, suspend/resume, thermals, Wine Wayland, networking,
+  Btrfs health). Good as submitted; `layers/04-graphics.sh` now installs
+  the tools it references (`stress-ng`, `lm_sensors`, `power-profiles-daemon`,
+  `upower`) since none of them were in the package list before.
+- **`pkgs/linux-icarus/PKGBUILD`** went through two rounds:
+  1. The first version targeted `7.2-rc1` via a `git.kernel.org/torvalds/t/...`
+     tarball URL with a supplied sha256 hash. That URL pattern has no
+     precedent anywhere in kernel.org's own docs, the ArchWiki's kernel-build
+     pages, or real AUR packages that fetch mainline/RC kernels — so rather
+     than ship an unverifiable URL+hash pair, it was corrected.
+  2. Final version: still targets `7.2-rc1` (that choice is reasonable —
+     Layer 3a's stock-kernel fallback means a bad -rc build here can't take
+     down a working system), but fetches it via `git+https://git.kernel.org/
+     pub/scm/linux/kernel/git/torvalds/linux.git#tag=v7.2-rc1` — the same
+     mechanism real mainline-kernel AUR packages (`linux-mainline`,
+     `linux-git`) use — and verifies the tag's PGP signature against
+     Torvalds' actual key in `prepare()` instead of relying on a tarball
+     hash. `.config` is built via `make defconfig` plus explicit
+     `scripts/config` toggles (a deliberate lean-kernel choice, not the
+     stock-kernel-config inheritance approach floated earlier) —
+     `burn-in-checklist.md` step 10 exists specifically to catch anything
+     that approach misses before you rely on it day-to-day.
+
+- **The conductor is now manifest-driven.** `icarus-assemble.sh` used to
+  hardcode each layer's invocation and argument list. It now reads
+  `layers/MANIFEST` and exports all global flags as `ICARUS_*` environment
+  variables that every layer receives automatically — adding a future
+  layer means writing a script (from `layers/TEMPLATE.sh`) and adding one
+  line to the manifest, not editing the conductor's logic. The loop
+  mechanics (env passthrough, soft-failure continuation, `--resume` skip
+  behavior) were verified with a standalone dry run before shipping this
+  change. See `ROADMAP.md`.
+
+## Later additions
+
+- **Layer 6 — AI & Engineering Performance** (soft, non-fatal). This is
+  what "beast for AI/engineering" actually decomposes into on this
+  hardware — none of it is custom CPU/iGPU code:
+  - `intel-compute-runtime` + `level-zero-loader` expose the Iris Xe to
+    real compute frameworks instead of it sitting idle outside display/
+    video decode.
+  - A Python venv (`~/.venvs/ai`) with OpenVINO and PyTorch's XPU build —
+    pip-based since Arch's system Python is externally managed (PEP 668).
+  - A documented (not auto-run) recipe at `~/bin/build-llamacpp-openvino.sh`
+    for llama.cpp's new OpenVINO backend (Intel shipped this in OpenVINO
+    2026.1, June 2026) — too new/fast-moving to bake into an unattended
+    script reliably.
+  - `scx-scheds` (sched_ext pluggable CPU schedulers, real Arch `extra`
+    package) with `scx_bpfland` as default — genuinely useful for mixed
+    compile+inference+desktop load. This needed `CONFIG_SCHED_CLASS_EXT`
+    added to the kernel PKGBUILD, since generic `defconfig` doesn't
+    guarantee it's on.
+  - `earlyoom` + `vm.swappiness=150` — the actual 8GB bottleneck is memory
+    pressure, not raw CPU/GPU speed, and swappiness is tuned high
+    specifically because swap is zram (compressed RAM), not disk.
+  - `thermald` — CPU and iGPU share one thermal budget; bad thermal
+    handling throttles both under sustained load.
+  - `ccache`, `podman`, `qemu-desktop`/`libvirt`, raised inotify watches
+    and file-descriptor ulimits, a USB-aware I/O scheduler udev rule.
+  - `icarus-perf {compute|desktop|battery}` — one command tying
+    power-profiles-daemon and the active scx scheduler together.
+
+- **Layer 7 — Native Apps** (soft, non-fatal). Chrome and "Microsoft
+  apps" don't need Wine:
+  - Chromium installed immediately from the official repo.
+  - `paru` (AUR helper) bootstrapped via `paru-bin` so Chrome and similar
+    packages outside the official repos become installable — AUR
+    packages are community-maintained, not vetted like `extra`/`core`,
+    worth knowing even for well-known ones like these.
+  - Google Chrome via AUR once paru exists.
+  - LibreOffice as the native Office-compatible suite.
+  - Documented but not auto-installed: Office/Teams work as web apps in
+    Chrome with no install at all; `teams-for-linux`,
+    `microsoft-edge-stable-bin`, and `visual-studio-code-bin` are one
+    `paru -S` away if you want them specifically.
 
 ## Things you still need to check on your own hardware before running this
 
@@ -131,6 +252,24 @@ achieve. Fixed here:
 - **Your actual free space margin.** 29GB is the stated minimum; a kernel
   source tree, build artifacts, and a couple of Wine prefixes will use a
   meaningful chunk of that. More headroom is better.
-- **`pkgs/linux-icarus/PKGBUILD`** must exist in this repo with your actual
-  kernel version/config/patches — that file is yours to provide; Layer 3b
-  will skip gracefully (not fail the whole install) if it's absent.
+- **`pkgs/linux-icarus/PKGBUILD`'s PGP verification.** `prepare()` tries to
+  fetch Torvalds' key from a keyserver and verify the `v7.2-rc1` tag —
+  that needs real network access from inside the chroot to actually
+  succeed. If the keyserver is unreachable during the build, you'll get a
+  warning rather than a hard failure; run `git tag -v v7.2-rc1` yourself
+  inside the extracted source once you have network access, and don't
+  fully trust the build until that comes back clean.
+- **A pre-release kernel needs the burn-in checklist more than a stable
+  one would.** `7.2-rc1` is a moving, unreleased target — run every step
+  of `burn-in-checklist.md` against it specifically, not just the stock
+  kernel, before you'd consider deleting Windows based on it working.
+- **Layer 7's AUR bootstrap needs live network access to actually work**
+  — if `paru` fails to build, Chromium and LibreOffice from earlier in
+  the same layer are unaffected, but Chrome/Teams/Edge/VS Code won't be
+  until you fix and re-run it (or install `paru` manually afterward).
+- **Specific engineering/CAD software isn't covered here** — Wine
+  compatibility varies enormously app-to-app (MATLAB has a native Linux
+  build; SolidWorks essentially doesn't work under Wine at all and needs
+  a Windows VM if you need it). If there's specific software beyond
+  browsers/Office/dev tooling this needs to run, that's worth mapping
+  per-app before assuming Wine will handle it.

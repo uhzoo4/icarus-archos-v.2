@@ -20,7 +20,8 @@ pacman -S --noconfirm --needed \
     hyprland waybar rofi-wayland kitty dolphin dunst swaybg \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
     qt5-wayland qt6-wayland xdg-desktop-portal-hyprland polkit-kde-agent \
-    ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp
+    ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp \
+    greetd greetd-tuigreet
 
 log "Installing Wine / Windows-app compatibility stack..."
 pacman -S --noconfirm --needed \
@@ -72,6 +73,47 @@ if [[ -f "${ICARUS_REPO_PATH}/configs/wine/wine-wayland.sh" ]]; then
 else
     fatal "Missing configs/wine/wine-wayland.sh in repo payload."
 fi
+
+if [[ -f "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" ]]; then
+    log "Installing rofi theme system-wide..."
+    install -d /usr/share/rofi/themes
+    install -m 0644 "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" /usr/share/rofi/themes/icarus-spotlight.rasi
+else
+    fatal "Missing configs/rofi/icarus-spotlight.rasi in repo payload."
+fi
+
+# ---------------------------------------------------------------------------
+# Display manager. Without this, boot lands at a plain TTY login and
+# Hyprland has to be started by hand every time — greetd + tuigreet gives an
+# actual login screen that launches Hyprland on successful auth. Both
+# packages are in Arch's official 'extra' repo, no AUR helper needed.
+# ---------------------------------------------------------------------------
+log "Configuring greetd + tuigreet as the login manager..."
+mkdir -p /etc/greetd
+cat > /etc/greetd/config.toml <<'EOF'
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --remember --remember-session --time --cmd Hyprland"
+user = "greeter"
+EOF
+
+if ! id greeter &>/dev/null; then
+    useradd -M -G video greeter
+fi
+
+systemctl enable greetd.service
+
+# ---------------------------------------------------------------------------
+# Pipewire user services. Arch's pipewire packaging generally auto-enables
+# these via systemd presets, but that isn't guaranteed across package
+# revisions — enabling explicitly and globally (i.e. for every user, not
+# just whoever is logged in when this script runs) removes the ambiguity.
+# ---------------------------------------------------------------------------
+log "Enabling Pipewire audio services for all users..."
+systemctl --global enable pipewire.service pipewire-pulse.service wireplumber.service 2>&1 \
+    || log "WARNING: could not globally enable Pipewire user services — verify manually after first login with 'systemctl --user status pipewire'."
 
 if id icarus &>/dev/null; then
     log "Populating existing user 'icarus' home directory with the skeleton..."
