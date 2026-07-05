@@ -90,6 +90,12 @@ else
     fatal "Missing configs/wallpaper/icarus-midnight.png in repo payload."
 fi
 
+if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" ]]; then
+    install -m 0755 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" /usr/local/bin/icarus-wallpaper
+else
+    fatal "Missing configs/wallpaper/icarus-wallpaper.sh in repo payload."
+fi
+
 # ---------------------------------------------------------------------------
 # GTK theme/icon/cursor settings. Papirus-Dark is installed above (official
 # repo). adw-gtk3-dark and Bibata-Modern-Ice are AUR-only and installed by

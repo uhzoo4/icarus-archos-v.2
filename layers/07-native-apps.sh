@@ -20,6 +20,7 @@
 set -uo pipefail  # deliberately not -e — per-app failures shouldn't cascade
 
 ICARUS_LOG_DIR="${ICARUS_LOG_DIR:-/var/log/icarus}"
+ICARUS_REPO_PATH="${ICARUS_REPO_PATH:-/usr/usr_src/icarus-archos}"
 SENTINEL="${ICARUS_LOG_DIR}/layer-7-native-apps.done"
 PREV_SENTINEL="${ICARUS_LOG_DIR}/layer-6-ai-engineering-perf.done"
 
@@ -105,6 +106,24 @@ aur_install google-chrome
 log "Installing theme packages (adw-gtk-theme, bibata-cursor-theme)..."
 aur_install adw-gtk-theme
 aur_install bibata-cursor-theme
+
+# ---------------------------------------------------------------------------
+# 3c. Live wallpaper. mpvpaper is AUR-only, hence installed here rather
+#     than alongside the static PNG in Layer 5. configs/wallpaper/
+#     icarus-wallpaper.sh (installed in Layer 5) already falls back to the
+#     static PNG via swaybg if mpvpaper isn't present — so if this
+#     specific install fails, the desktop still gets a wallpaper, just not
+#     the animated one.
+# ---------------------------------------------------------------------------
+log "Installing mpvpaper (live wallpaper) and the animated wallpaper file..."
+aur_install mpvpaper
+if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight-live.mp4" ]]; then
+    install -d /usr/share/backgrounds/icarus
+    install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight-live.mp4" /usr/share/backgrounds/icarus/icarus-midnight-live.mp4
+else
+    warn "Missing configs/wallpaper/icarus-midnight-live.mp4 — will fall back to the static wallpaper even if mpvpaper installed fine."
+fi
+log "Note: mpvpaper decodes video continuously, which costs more battery than a static wallpaper. The 'mpvpaper-stop' companion tool (AUR) can pause it on idle/lock if that matters more than the motion — not installed by default."
 
 # ---------------------------------------------------------------------------
 # 4. Microsoft-adjacent needs — native/web-first, Wine only where nothing

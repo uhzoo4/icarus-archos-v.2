@@ -259,6 +259,29 @@ are AUR-only and install in Layer 7, once `paru` exists — referencing
 their names in Layer 5's configs before they're installed is safe since
 nothing reads them until first login, after every layer finishes.
 
+## Live wallpaper, glassmorphism, macOS-style transitions
+
+- **`configs/wallpaper/icarus-midnight-live.mp4`** — a 12-second seamless
+  loop of the same scene (twinkling stars, a slowly breathing moon glow,
+  drifting fog), procedurally generated and ffmpeg-encoded, not sourced
+  from anywhere — 96KB, because the content compresses extremely well.
+  Played via `mpvpaper` (AUR, installed in Layer 7).
+  `configs/wallpaper/icarus-wallpaper.sh` (installed in Layer 5) picks
+  mpvpaper if it's actually present and falls back to the static PNG via
+  `swaybg` otherwise, so a failed AUR bootstrap degrades to "wrong
+  wallpaper" rather than "no wallpaper."
+- **Glassmorphism now applies to layer-shell surfaces, not just windows.**
+  `decoration:blur` in Hyprland only covers ordinary windows automatically
+  — Waybar, Rofi, and dunst's notification popups needed explicit
+  `layerrule = blur, <namespace>` entries to actually get frosted glass
+  too. Hyprland is mid-migration toward a Lua config format (hyprlang
+  deprecated as of 0.55) — this is flagged in the config file itself; if
+  a future Hyprland update rejects these lines, that's why.
+- **Window open/close now uses `popin` (scale + fade from center)**
+  instead of a slide — this is what actually reads as "macOS-like," not
+  the color palette. Applied to `windowsIn`/`windowsOut` and
+  `layersIn`/`layersOut` (so Rofi and notifications pop in the same way).
+
 ## Things you still need to check on your own hardware before running this
 
 - **Your exact Iris Xe generation.** Run `lspci -nn | grep -i vga` on the
@@ -289,3 +312,13 @@ nothing reads them until first login, after every layer finishes.
   a Windows VM if you need it). If there's specific software beyond
   browsers/Office/dev tooling this needs to run, that's worth mapping
   per-app before assuming Wine will handle it.
+- **The live wallpaper costs more battery than a static one** — mpvpaper
+  decodes video continuously. If that matters more than the motion on
+  battery, either drop the `exec-once` line for it in `hyprland.conf`
+  (falls back to the static PNG automatically) or look at wiring up
+  `mpvpaper-stop` (AUR, not installed by default) to pause on idle/lock.
+- **The `layerrule` blur syntax is on the older side of an active Hyprland
+  config migration** (see the theme-pass note above) — if Waybar/Rofi/
+  notifications stop looking blurred after a Hyprland update, that's the
+  first thing to check against the current wiki, not a sign something
+  else broke.
