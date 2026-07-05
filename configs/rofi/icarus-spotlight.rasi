@@ -1,20 +1,22 @@
 /*
  * icarus-spotlight.rasi
- * A Spotlight-style rofi theme for Icarus-ArchOS.
- * Installed system-wide to /usr/share/rofi/themes/ so bare `-theme
- * icarus-spotlight` invocations resolve correctly.
+ * Intelligent Darkness palette — near-black, titanium structure, a single
+ * steel-blue accent on selection. No gradients, no saturated color.
+ * Installed system-wide to /usr/share/rofi/themes/ so bare
+ * `-theme icarus-spotlight` invocations resolve correctly.
  */
 
 * {
-    bg:          rgba(20, 20, 20, 0.85);
-    bg-alt:      rgba(255, 255, 255, 0.06);
-    fg:          #ffffff;
-    fg-dim:      rgba(255, 255, 255, 0.55);
-    accent:      #a0a0a0;
+    bg:          rgba(10, 10, 10, 0.88);
+    bg-alt:      rgba(154, 160, 166, 0.08);   /* titanium, very faint */
+    fg:          #C7CACD;                     /* silver */
+    fg-dim:      rgba(199, 202, 205, 0.5);
+    accent:      #4A6D8C;                     /* steel blue */
+    border-col:  rgba(154, 160, 166, 0.16);
 
     background-color: transparent;
     text-color:       @fg;
-    font:             "JetBrainsMono Nerd Font 13";
+    font:             "JetBrains Mono Nerd Font 13";
 }
 
 window {
@@ -24,8 +26,8 @@ window {
     width:        640px;
     background-color: @bg;
     border:       1px;
-    border-color: rgba(255, 255, 255, 0.15);
-    border-radius: 14px;
+    border-color: @border-col;
+    border-radius: 12px;
     padding:      4px;
 }
 
@@ -41,6 +43,8 @@ inputbar {
     children: [ prompt, entry ];
     spacing: 8px;
     padding: 6px 10px;
+    border: 0 0 1px 0;
+    border-color: @border-col;
 }
 
 prompt {
@@ -73,6 +77,8 @@ element {
 element selected {
     background-color: @bg-alt;
     text-color: @fg;
+    border: 0 0 0 2px;
+    border-color: @accent;
 }
 
 element-text {

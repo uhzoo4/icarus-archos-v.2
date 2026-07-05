@@ -21,7 +21,7 @@ pacman -S --noconfirm --needed \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
     qt5-wayland qt6-wayland xdg-desktop-portal-hyprland polkit-kde-agent \
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp \
-    greetd greetd-tuigreet
+    greetd greetd-tuigreet papirus-icon-theme
 
 log "Installing Wine / Windows-app compatibility stack..."
 pacman -S --noconfirm --needed \
@@ -81,6 +81,34 @@ if [[ -f "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" ]]; then
 else
     fatal "Missing configs/rofi/icarus-spotlight.rasi in repo payload."
 fi
+
+if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" ]]; then
+    log "Installing wallpaper..."
+    install -d /usr/share/backgrounds/icarus
+    install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
+else
+    fatal "Missing configs/wallpaper/icarus-midnight.png in repo payload."
+fi
+
+# ---------------------------------------------------------------------------
+# GTK theme/icon/cursor settings. Papirus-Dark is installed above (official
+# repo). adw-gtk3-dark and Bibata-Modern-Ice are AUR-only and installed by
+# Layer 7 once paru exists — referencing their names here is safe regardless
+# of install order, since nothing reads settings.ini until first login,
+# which happens after every layer has finished.
+# ---------------------------------------------------------------------------
+log "Writing GTK theme settings..."
+mkdir -p /etc/skel/.config/gtk-3.0 /etc/skel/.config/gtk-4.0
+for GTK_DIR in gtk-3.0 gtk-4.0; do
+cat > "/etc/skel/.config/${GTK_DIR}/settings.ini" << 'EOF'
+[Settings]
+gtk-theme-name=adw-gtk3-dark
+gtk-icon-theme-name=Papirus-Dark
+gtk-cursor-theme-name=Bibata-Modern-Ice
+gtk-cursor-theme-size=22
+gtk-application-prefer-dark-theme=1
+EOF
+done
 
 # ---------------------------------------------------------------------------
 # Display manager. Without this, boot lands at a plain TTY login and

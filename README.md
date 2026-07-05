@@ -243,6 +243,22 @@ safe to build with:
     `microsoft-edge-stable-bin`, and `visual-studio-code-bin` are one
     `paru -S` away if you want them specifically.
 
+## Theme pass — "Intelligent Darkness"
+
+`configs/hypr/hyprland.conf`, `configs/waybar/style.css`,
+`configs/rofi/icarus-spotlight.rasi` were recolored to a fixed palette
+(near-black `#050505`–`#16181D`, titanium/steel-blue structure, ice-blue/
+amber/soft-red reserved strictly for functional states like battery
+warnings — no other color). Border reduced to 1px, blur made subtler,
+animation curve changed to a no-overshoot deceleration curve.
+`configs/wallpaper/icarus-midnight.png` is original generative art (a
+procedurally drawn moon/fog/brutalist-skyline scene, not a photo — no
+copyright concern) matching the same palette. `Papirus-Dark` installs from
+the official repo in Layer 5; `adw-gtk-theme` and `bibata-cursor-theme`
+are AUR-only and install in Layer 7, once `paru` exists — referencing
+their names in Layer 5's configs before they're installed is safe since
+nothing reads them until first login, after every layer finishes.
+
 ## Things you still need to check on your own hardware before running this
 
 - **Your exact Iris Xe generation.** Run `lspci -nn | grep -i vga` on the

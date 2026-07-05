@@ -98,6 +98,15 @@ log "Installing Google Chrome (AUR)..."
 aur_install google-chrome
 
 # ---------------------------------------------------------------------------
+# 3b. Theme packages referenced by configs/hypr/hyprland.conf and Layer 5's
+#     GTK settings.ini (adw-gtk3-dark, Bibata-Modern-Ice) but not installed
+#     there since both are AUR-only and paru doesn't exist until this layer.
+# ---------------------------------------------------------------------------
+log "Installing theme packages (adw-gtk-theme, bibata-cursor-theme)..."
+aur_install adw-gtk-theme
+aur_install bibata-cursor-theme
+
+# ---------------------------------------------------------------------------
 # 4. Microsoft-adjacent needs — native/web-first, Wine only where nothing
 #    else covers it.
 # ---------------------------------------------------------------------------
