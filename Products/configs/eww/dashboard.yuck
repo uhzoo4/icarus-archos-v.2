@@ -1,0 +1,70 @@
+(defpoll volume :interval "1s" "~/.config/eww/scripts/get_vol.sh")
+(defpoll brightness :interval "1s" "brightnessctl -m | awk -F, '{print substr($4, 0, length($4)-1)}'")
+(defpoll username :interval "24h" "whoami")
+(defpoll uptime :interval "1m" "uptime -p | sed 's/up //'")
+
+(defwidget dashboard_layout []
+    (box :class "dashboard-container"
+         :orientation "vertical"
+         :space-evenly false
+         
+        ;; Profile Card
+        (box :class "profile-card"
+             :orientation "horizontal"
+             :space-evenly false
+             :spacing 20
+             (image :path "/usr/share/backgrounds/icarus/icarus-logo.png"
+                    :image-width 64
+                    :image-height 64)
+             (box :orientation "vertical"
+                  :space-evenly false
+                  :valign "center"
+                  (label :class "profile-name" :text username :halign "start")
+                  (label :class "profile-uptime" :text "up ${uptime}" :halign "start" :style "color: #999999; font-size: 13px;")))
+                  
+        ;; Quick Toggles
+        (box :class "quick-toggles"
+             :orientation "horizontal"
+             :space-evenly true
+             :spacing 15
+             (button :class "toggle-btn" :tooltip "Network Settings" :onclick "nm-connection-editor &" "󰖩")
+             (button :class "toggle-btn" :tooltip "Bluetooth Settings" :onclick "blueman-manager &" "󰂯")
+             (button :class "toggle-btn" :tooltip "Toggle Notifications" :onclick "swaync-client -t -sw" "󰂚"))
+             
+        ;; Sliders
+        (box :class "sliders-box"
+             :orientation "vertical"
+             :space-evenly false
+             :spacing 25
+             (box :orientation "horizontal"
+                  :space-evenly false
+                  (label :class "slider-icon" :text "")
+                  (scale :class "slider" 
+                         :value volume 
+                         :tooltip "Volume: ${volume}%"
+                         :onchange "wpctl set-volume @DEFAULT_AUDIO_SINK@ {}%"
+                         :min 0 :max 101))
+             (box :orientation "horizontal"
+                  :space-evenly false
+                  (label :class "slider-icon" :text "󰃠")
+                  (scale :class "slider" 
+                         :value brightness 
+                         :tooltip "Brightness: ${brightness}%"
+                         :onchange "brightnessctl s {}%"
+                         :min 0 :max 101)))
+                         
+        ;; System Stats
+        (box :class "stats-box"
+             :orientation "vertical"
+             :space-evenly false
+             :spacing 15
+             (box :orientation "vertical"
+                  :space-evenly false
+                  (label :class "stat-label" :text "CPU: ${round(EWW_CPU.avg, 0)}%" :halign "start")
+                  (scale :class "stat-bar" :value {EWW_CPU.avg} :active false :min 0 :max 100))
+             (box :orientation "vertical"
+                  :space-evenly false
+                  (label :class "stat-label" :text "RAM: ${round(EWW_RAM.used_mem_perc, 0)}%" :halign "start")
+                  (scale :class "stat-bar" :value {EWW_RAM.used_mem_perc} :active false :min 0 :max 100)))
+    )
+)
