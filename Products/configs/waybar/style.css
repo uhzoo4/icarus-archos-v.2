@@ -1,0 +1,169 @@
+/* Icarus-ArchOS Waybar — Intelligent Darkness palette.
+   Near-black surfaces, titanium/steel-blue structure, ice-blue/amber/
+   soft-red reserved strictly for functional states (battery), never
+   decorative. No gradients. Enhanced with hover transitions, tooltip
+   styling, and pulse animation for battery critical. */
+
+* {
+    font-family: "JetBrains Mono Nerd Font", "Geist Mono", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    min-height: 0;
+}
+
+@import url("../../icarus/theme/colors.css");
+
+@define-color bgHover      rgba(154, 160, 166, 0.08);
+@define-color borderFaint  rgba(154, 160, 166, 0.14);
+@define-color textDim      rgba(199, 202, 205, 0.45);
+@define-color accentAmber  #E8A94D;
+@define-color accentRed    #C96B6B;
+@define-color accentGreen  #7D9E82;
+
+window#waybar {
+    background: @bgBase;
+    border: 1px solid @borderFaint;
+    border-radius: 10px;
+    color: @textPrimary;
+}
+
+/* --- Tooltips: glassmorphic popups --- */
+tooltip {
+    background: rgba(10, 10, 10, 0.88);
+    border: 1px solid @borderFaint;
+    border-radius: 8px;
+    color: @textPrimary;
+    padding: 8px 12px;
+}
+
+tooltip label {
+    color: @textPrimary;
+}
+
+/* --- Workspaces --- */
+#workspaces button {
+    padding: 0 8px;
+    color: @textDim;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    transition: all 200ms ease;
+}
+
+#workspaces button.active {
+    color: @textPrimary;
+    box-shadow: inset 0 -2px @accent;
+}
+
+#workspaces button:hover {
+    color: @textPrimary;
+    background: @bgHover;
+}
+
+#workspaces button.urgent {
+    color: @accentAmber;
+}
+
+/* --- Active window title --- */
+#window {
+    padding: 0 10px;
+    color: @textPrimary;
+}
+
+/* --- All module separators: thin titanium 1px lines --- */
+#clock,
+#network,
+#cpu,
+#memory,
+#battery,
+#tray,
+#pulseaudio,
+#backlight,
+#idle_inhibitor,
+#custom-power {
+    padding: 0 12px;
+    border-left: 1px solid @borderFaint;
+    transition: all 200ms ease;
+}
+
+/* --- Hover glow on interactive modules --- */
+#pulseaudio:hover,
+#network:hover,
+#backlight:hover,
+#battery:hover,
+#idle_inhibitor:hover,
+#custom-power:hover {
+    background: @bgHover;
+    border-radius: 6px;
+}
+
+/* --- Clock: slightly bolder --- */
+#clock {
+    color: @textPrimary;
+    font-weight: 600;
+    border-left: none;
+}
+
+/* --- Status modules: dimmed by default, brighten on hover --- */
+#cpu, #memory, #network, #pulseaudio, #backlight {
+    color: @textDim;
+}
+
+#cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #backlight:hover {
+    color: @textPrimary;
+}
+
+/* --- Battery: state-driven color only --- */
+#battery {
+    color: @textDim;
+}
+
+#battery.charging {
+    color: @accentGreen;
+}
+
+#battery.warning {
+    color: @accentAmber;
+}
+
+#battery.critical {
+    color: @accentRed;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* --- Idle inhibitor: ice-blue when active --- */
+#idle_inhibitor {
+    color: @textDim;
+}
+
+#idle_inhibitor.activated {
+    color: @accentLight;
+}
+
+/* --- Power button: subtle until hovered --- */
+#custom-power {
+    color: @textDim;
+    padding: 0 14px 0 12px;
+}
+
+#custom-power:hover {
+    color: @accentRed;
+}
+
+/* --- Tray --- */
+#tray {
+    padding: 0 10px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+}

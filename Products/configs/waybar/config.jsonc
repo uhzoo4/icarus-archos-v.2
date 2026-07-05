@@ -1,0 +1,115 @@
+{
+    "layer": "top",
+    "position": "top",
+    "margin-top": 8,
+    "margin-left": 14,
+    "margin-right": 14,
+    "height": 32,
+    "modules-left": ["hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["clock"],
+    "modules-right": ["idle_inhibitor", "pulseaudio", "backlight", "network", "cpu", "memory", "battery", "tray", "custom/power"],
+
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "on-click": "activate",
+        "format-icons": {
+            "1": "󰎤",
+            "2": "󰎧",
+            "3": "󰎪",
+            "4": "󰎭",
+            "5": "󰎱",
+            "6": "󰎳",
+            "7": "󰎶",
+            "8": "󰎹",
+            "9": "󰎼",
+            "urgent": "",
+            "active": "",
+            "default": ""
+        },
+        "persistent-workspaces": {
+            "*": 5
+        }
+    },
+    "hyprland/window": {
+        "max-length": 35,
+        "rewrite": {
+            "(.*) — Mozilla Firefox": " $1",
+            "(.*) - Google Chrome": " $1",
+            "(.*) — Dolphin": "󰉋 $1",
+            "kitty": " Terminal"
+        }
+    },
+    "clock": {
+        "format": "{:%a %b %d  %I:%M %p}",
+        "format-alt": "{:%Y-%m-%d %H:%M:%S}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>",
+        "interval": 1
+    },
+    "cpu": {
+        "format": "󰻠 {usage}%",
+        "interval": 2,
+        "tooltip-format": "CPU: {usage}%\n{avg_frequency} GHz"
+    },
+    "memory": {
+        "format": "󰑭 {}%",
+        "interval": 2,
+        "tooltip-format": "RAM: {used:0.1f}GB / {total:0.1f}GB"
+    },
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-muted": "󰖁 muted",
+        "format-icons": {
+            "headphone": "󰋋",
+            "hands-free": "󰋎",
+            "headset": "󰋎",
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["", "", ""]
+        },
+        "on-click": "pavucontrol",
+        "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "scroll-step": 2,
+        "tooltip-format": "{desc}: {volume}%"
+    },
+    "network": {
+        "format-wifi": "  {essid}",
+        "format-ethernet": "󰈀 Link",
+        "format-disconnected": "󰤭 Off",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr}/{cidr}",
+        "tooltip-format-ethernet": "{ifname}: {ipaddr}/{cidr}",
+        "on-click": "kitty -e nmtui"
+    },
+    "battery": {
+        "states": { "warning": 30, "critical": 15 },
+        "format": "{icon} {capacity}%",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󰂄 {capacity}%",
+        "format-full": "󰁹 Full",
+        "format-icons": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"],
+        "tooltip-format": "{timeTo}\nPower draw: {power:.1f}W"
+    },
+    "backlight": {
+        "format": "󰃟 {percent}%",
+        "tooltip-format": "Brightness: {percent}%",
+        "on-scroll-up": "brightnessctl s 2%+",
+        "on-scroll-down": "brightnessctl s 2%-"
+    },
+    "idle_inhibitor": {
+        "format": "{icon}",
+        "format-icons": {
+            "activated": "󰛊",
+            "deactivated": "󰾫"
+        },
+        "tooltip-format-activated": "Idle inhibitor: ON (screen won't lock)",
+        "tooltip-format-deactivated": "Idle inhibitor: OFF"
+    },
+    "tray": {
+        "spacing": 10
+    },
+    "custom/power": {
+        "format": "⏻",
+        "tooltip": "Power Menu",
+        "on-click": "wlogout -b 4"
+    }
+}
