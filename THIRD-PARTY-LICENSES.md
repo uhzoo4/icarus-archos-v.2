@@ -1,12 +1,15 @@
-﻿# Third-Party Licenses
+# Third-Party Licenses
 
 This distribution incorporates code and assets from the following open-source projects:
+
+## btrfs-assistant
+Project: https://gitlab.com/btrfs-assistant/btrfs-assistant
+License: GPL-3.0
+Adapted: The monthly systemd btrfs scrub scheduling convention was adopted to ensure filesystem health on the root volume.
 
 ## Ax-Shell-main
 
 \\\	ext
-
-                    GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
  Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>

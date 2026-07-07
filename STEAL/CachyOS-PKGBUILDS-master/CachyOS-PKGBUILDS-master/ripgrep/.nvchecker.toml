@@ -1,3 +1,0 @@
-[ripgrep]
-source = "git"
-git = "https://github.com/BurntSushi/ripgrep.git"

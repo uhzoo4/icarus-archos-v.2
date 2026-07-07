@@ -1,4 +1,0 @@
-[broadcom-wl-dkms]
-source = "repology"
-repology = "broadcom-sta"
-repo = "debian_unstable"

@@ -32,6 +32,11 @@ FREE_GB=$(( FREE_KB / 1024 / 1024 ))
 
 log "Refreshing host keyring to avoid signature failures on a rolling release live ISO..."
 timedatectl set-ntp true || log "WARNING: could not enable NTP sync (no network yet?). Continuing."
+
+log "Updating and ranking pacman mirrors..."
+pacman -S --noconfirm reflector
+reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || log "WARNING: reflector failed to update mirrors."
+
 pacman-key --init
 pacman-key --populate archlinux
 pacman -Sy --noconfirm archlinux-keyring

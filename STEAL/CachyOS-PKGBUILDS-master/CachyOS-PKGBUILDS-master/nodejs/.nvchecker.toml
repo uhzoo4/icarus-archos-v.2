@@ -1,4 +1,0 @@
-[nodejs]
-source = "regex"
-url = "https://nodejs.org/dist/latest/"
-regex = ">node\\-v(.*)\\.tar\\.xz"

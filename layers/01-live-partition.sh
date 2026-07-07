@@ -67,7 +67,7 @@ log "Current partition table:"
 lsblk "$TARGET"
 echo
 echo "This will DESTROY ALL DATA on ${TARGET}. Type 'yes' to continue:"
-read -r CONFIRM
+read -r CONFIRM < /dev/tty
 [[ "$CONFIRM" == "yes" ]] || fatal "Confirmation not given. Aborting."
 
 # --- Determine partition naming (nvme0n1p1 vs sdb1) ---

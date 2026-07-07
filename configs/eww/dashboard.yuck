@@ -13,7 +13,7 @@
              :orientation "horizontal"
              :space-evenly false
              :spacing 20
-             (image :path "/usr/share/backgrounds/icarus/icarus-logo.png"
+             (image :path "/usr/share/backgrounds/icarus/icarus-midnight.png"
                     :image-width 64
                     :image-height 64)
              (box :orientation "vertical"

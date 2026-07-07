@@ -1,3 +1,0 @@
-[cachyos-cli-installer-new]
-source = "git"
-git = "https://github.com/cachyos/new-cli-installer.git"

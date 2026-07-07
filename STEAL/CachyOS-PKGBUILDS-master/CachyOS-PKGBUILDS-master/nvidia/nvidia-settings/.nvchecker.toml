@@ -1,3 +1,0 @@
-[nvidia-settings]
-source = "git"
-git = "https://github.com/NVIDIA/nvidia-settings.git"

@@ -22,6 +22,9 @@ ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf 2>/dev/null || tru
 log "Enabling flash trim timer..."
 systemctl enable fstrim.timer
 
+log "Enabling monthly Btrfs scrub timer..."
+systemctl enable btrfs-scrub@-.timer
+
 mkdir -p "$ICARUS_LOG_DIR"
 touch "$SENTINEL"
 log "Layer 3c complete. Sentinel written: ${SENTINEL}"

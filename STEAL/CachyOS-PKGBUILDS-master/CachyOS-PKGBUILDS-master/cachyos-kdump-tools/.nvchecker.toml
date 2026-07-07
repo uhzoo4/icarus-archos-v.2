@@ -1,3 +1,0 @@
-[cachyos-kdump-tools]
-source = "git"
-git = "https://github.com/CachyOS/cachyos-kdump-tools.git"
