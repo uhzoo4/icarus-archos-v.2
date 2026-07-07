@@ -78,9 +78,9 @@ MEM_TOTAL_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 MEM_TOTAL_GB=$(( MEM_TOTAL_KB / 1024 / 1024 ))
 NPROC=$(nproc)
 
-# Rule of thumb: budget ~1.5-2GB of RAM per parallel kernel compile job.
+# Rule of thumb: budget ~2GB of RAM per parallel kernel compile job.
 # Never go below 1, never exceed nproc.
-SAFE_JOBS=$(( MEM_TOTAL_GB * 2 / 3 ))
+SAFE_JOBS=$(( MEM_TOTAL_GB / 2 ))
 [[ $SAFE_JOBS -lt 1 ]] && SAFE_JOBS=1
 [[ $SAFE_JOBS -gt $NPROC ]] && SAFE_JOBS=$NPROC
 
@@ -162,13 +162,15 @@ if [[ $BUILD_STATUS -ne 0 ]]; then
     warn_and_exit_gracefully "Kernel build failed (see ${BUILD_LOG}). "
 fi
 
-PKG_FILE=$(find "$PKGDIR" -maxdepth 1 -name '*.pkg.tar.zst' | head -1)
-[[ -n "$PKG_FILE" ]] || warn_and_exit_gracefully "Build reported success but no package file was found."
+PKG_FILES=$(find "$PKGDIR" -maxdepth 1 -name '*.pkg.tar.zst')
+[[ -n "$PKG_FILES" ]] || warn_and_exit_gracefully "Build reported success but no package files were found."
 
-log "Installing built package: ${PKG_FILE}"
-pacman -U --noconfirm "$PKG_FILE" || warn_and_exit_gracefully "Failed to install the built kernel package."
+log "Installing built packages..."
+# We must pass the list of files unquoted so pacman sees them as separate arguments
+# shellcheck disable=SC2086
+pacman -U --noconfirm $PKG_FILES || warn_and_exit_gracefully "Failed to install the built kernel packages."
 
-KERNEL_NAME=$(basename "$PKG_FILE" | sed -E 's/-[0-9].*//')
+KERNEL_NAME="linux-icarus"
 mkinitcpio -p "$KERNEL_NAME" || mkinitcpio -P || warn_and_exit_gracefully "initramfs regeneration failed for the custom kernel."
 
 source "${ICARUS_LOG_DIR}/layer-3a-core.env" 2>/dev/null || true
