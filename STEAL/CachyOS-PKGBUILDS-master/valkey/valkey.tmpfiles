@@ -1,3 +1,0 @@
-d /var/lib/valkey 0700 valkey valkey
-d /etc/valkey 0755 root valkey
-f /etc/valkey/sentinel.conf 0664 root valkey

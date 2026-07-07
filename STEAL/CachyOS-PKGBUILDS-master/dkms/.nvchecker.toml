@@ -1,4 +1,0 @@
-[dkms]
-source = "git"
-git = "https://github.com/dell/dkms.git"
-prefix = "v"

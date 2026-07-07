@@ -1,3 +1,0 @@
-[steamdeck-dsp]
-source = "git"
-git = "https://github.com/evlaV/valve-hardware-audio-processing.git"

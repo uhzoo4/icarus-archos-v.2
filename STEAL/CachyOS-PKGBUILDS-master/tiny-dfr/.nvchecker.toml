@@ -1,4 +1,0 @@
-[tiny-dfr]
-source = "github"
-github = "AsahiLinux/tiny-dfr"
-use_latest_release = true

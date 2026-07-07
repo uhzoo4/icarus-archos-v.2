@@ -1,4 +1,0 @@
-[repo-manage-util]
-source = "git"
-git = "https://github.com/cachyos/repo-manage-util.git"
-prefix = "v"

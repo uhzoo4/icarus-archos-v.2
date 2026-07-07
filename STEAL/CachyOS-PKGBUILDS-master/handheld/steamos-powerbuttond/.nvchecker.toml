@@ -1,4 +1,0 @@
-[powerbuttond]
-source = "git"
-git = "https://gitlab.steamos.cloud/holo/powerbuttond"
-prefix = "v"

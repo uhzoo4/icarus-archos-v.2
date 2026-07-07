@@ -1,4 +1,0 @@
-[scx-scheds]
-source = "git"
-git = "https://github.com/sched-ext/scx.git"
-prefix = "v"

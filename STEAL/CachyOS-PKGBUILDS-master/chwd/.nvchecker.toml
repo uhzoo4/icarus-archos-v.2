@@ -1,4 +1,0 @@
-[chwd]
-source = "git"
-git = "https://github.com/cachyos/chwd.git"
-prefix = "v"

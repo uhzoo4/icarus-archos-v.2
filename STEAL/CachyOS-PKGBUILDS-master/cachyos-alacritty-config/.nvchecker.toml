@@ -1,3 +1,0 @@
-[cachyos-alacritty-config]
-source = "git"
-git = "https://github.com/cachyos/cachyos-alacritty-config.git"

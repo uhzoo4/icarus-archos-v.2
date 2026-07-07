@@ -1,3 +1,0 @@
-[dracut-cachyos]
-source = "git"
-git = "https://github.com/dracut-ng/dracut-ng.git"
