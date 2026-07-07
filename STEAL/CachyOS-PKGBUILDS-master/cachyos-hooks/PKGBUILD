@@ -1,0 +1,30 @@
+# Maintainer: Piotr Górski <lucjan.lucjanov@gmail.com>
+# Maintainer: Vasiliy Stelmachenok <ventureo@cachyos.org>
+# Contributor: Michael Bolden <me@sm9.dev>
+
+pkgname=cachyos-hooks
+pkgver=2026.02.05
+pkgrel=1
+pkgdesc='CachyOS libalpm hooks'
+groups=('cachyos')
+makedepends=('git')
+depends=('systemd')
+arch=('any')
+license=(GPL-3.0-or-later)
+url="https://github.com/cachyos/${pkgname}/"
+source=("git+https://github.com/CachyOS/cachyos-hooks#tag=$pkgver")
+sha512sums=('f118ebcea77afd1ac801561da23f945e2d9b446b12d8724912c9fda90cc89eb25f9426c38a2bd0a471ef9120198b2addc5982f97152b0bd1cbc50d242bcc0bc2')
+
+package() {
+  cd "$pkgname"
+
+  install -Dm644 cachyos-branding.hook "$pkgdir/usr/share/libalpm/hooks/cachyos-branding.hook"
+  install -Dm644 cachyos-nvidia.hook "$pkgdir/usr/share/libalpm/hooks/cachyos-nvidia.hook"
+  install -Dm644 cachyos-plymouth-initramfs.hook "$pkgdir/usr/share/libalpm/hooks/cachyos-plymouth-initramfs.hook"
+  install -Dm644 cachyos-reboot-required.hook "$pkgdir/usr/share/libalpm/hooks/cachyos-reboot-required.hook"
+  install -Dm644 lsb-release.hook "$pkgdir/usr/share/libalpm/hooks/lsb-release.hook"
+  install -Dm644 os-release.hook "$pkgdir/usr/share/libalpm/hooks/os-release.hook"
+  install -Dm755 cachyos-branding "$pkgdir/usr/share/libalpm/scripts/cachyos-branding"
+  install -Dm755 cachyos-reboot-required "$pkgdir/usr/share/libalpm/scripts/cachyos-reboot-required"
+  install -Dm755 update-initramfs "$pkgdir/usr/bin/update-initramfs"
+}

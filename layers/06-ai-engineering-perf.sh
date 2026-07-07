@@ -69,6 +69,17 @@ if id icarus &>/dev/null; then
             pip install torch --index-url https://download.pytorch.org/whl/xpu
         " || warn "One or more pip installs into ${AI_VENV} failed — check network access and retry manually: source ${AI_VENV}/bin/activate && pip install openvino torch --index-url https://download.pytorch.org/whl/xpu"
         log "AI venv ready at ${AI_VENV} — activate with: source ${AI_VENV}/bin/activate"
+        
+        # Write mimalloc ai-run wrapper
+        mkdir -p /home/icarus/bin
+        cat > /home/icarus/bin/ai-run << 'EOF_WRAPPER'
+#!/usr/bin/env bash
+# Runs Python with the mimalloc allocator for faster, less fragmented memory
+export LD_PRELOAD=/usr/lib/libmimalloc.so
+exec "$@"
+EOF_WRAPPER
+        chmod +x /home/icarus/bin/ai-run
+        chown -R icarus:icarus /home/icarus/bin
     else
         warn "Could not create the AI venv at ${AI_VENV}."
     fi
@@ -160,8 +171,8 @@ fi
 # ---------------------------------------------------------------------------
 # 7. Dev-workflow plumbing.
 # ---------------------------------------------------------------------------
-log "Installing dev tooling (ccache, podman, QEMU/KVM)..."
-try_install ccache
+log "Installing dev tooling (ccache, podman, QEMU/KVM, nvtop, intel-gpu-tools, mimalloc)..."
+try_install ccache nvtop intel-gpu-tools mimalloc
 try_install podman
 try_install qemu-desktop libvirt virt-manager dnsmasq
 if pacman -Qi libvirt &>/dev/null; then

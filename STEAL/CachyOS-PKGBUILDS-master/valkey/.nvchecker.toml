@@ -1,0 +1,3 @@
+[valkey]
+source = "archpkg"
+archpkg = "valkey"

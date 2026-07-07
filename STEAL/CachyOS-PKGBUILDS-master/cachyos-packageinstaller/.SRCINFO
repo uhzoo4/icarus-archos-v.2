@@ -1,0 +1,25 @@
+pkgbase = cachyos-packageinstaller
+	pkgdesc = Simple Software Application Package Installer for CachyOS which helps setting up & installing applications
+	pkgver = 1.6.2
+	pkgrel = 1
+	url = https://github.com/cachyos/packageinstaller
+	arch = aarch64
+	arch = x86_64
+	groups = cachyos
+	license = GPL-3.0-or-later
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = git
+	makedepends = polkit-qt6
+	makedepends = qt6-tools
+	makedepends = cargo
+	makedepends = lld
+	makedepends = clang
+	makedepends = llvm
+	depends = qt6-base
+	depends = polkit
+	source = packageinstaller::git+https://github.com/cachyos/packageinstaller.git#tag=v1.6.2?signed
+	validpgpkeys = B1B70BB1CD56047DEF31DE2EB62C3D10C54D5DA9
+	sha256sums = 8b63b69702f5fe1c38d746e61ad232d2deeba8c1eadfacdf53735bf9ff518edc
+
+pkgname = cachyos-packageinstaller

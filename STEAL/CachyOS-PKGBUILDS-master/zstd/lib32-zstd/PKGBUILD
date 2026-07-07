@@ -1,0 +1,87 @@
+# Maintainer: Levente Polyak <anthraxx[at]archlinux[dot]org>
+# Contributor: Bartłomiej Piotrowski <bpiotrowski@archlinux.org>
+# Contributor: Andrzej Giniewicz <gginiu@gmail.com>
+# Contributor: Johan Förberg <johan@forberg.se>
+
+_optimize_znver4=${_optimize_znver4-}
+
+_pkgname=zstd
+pkgname=lib32-zstd
+pkgver=1.5.7
+pkgrel=2
+pkgdesc='Zstandard - Fast real-time compression algorithm (32-bit)'
+url='https://facebook.github.io/zstd/'
+arch=(x86_64)
+license=(
+  BSD-3-Clause
+  GPL-2.0-only
+)
+depends=(
+  zstd
+  lib32-glibc
+)
+makedepends=(
+  cmake
+  gtest
+  ninja
+)
+provides=(libzstd.so)
+source=(https://github.com/facebook/zstd/releases/download/v${pkgver}/zstd-${pkgver}.tar.zst{,.sig})
+sha256sums=('5b331d961d6989dc21bb03397fc7a2a4d86bc65a14adc5ffbbce050354e30fd2'
+            'SKIP')
+b2sums=('20df0493d9d960b8fc98f7cac7630f84dae6226bd906364ab9c9ce7dfb2be44a303fd077e4264979f3ee92efd59072d63c4bb4ae7b65c52f6ce0153513088837'
+        'SKIP')
+validpgpkeys=(4EF4AC63455FC9F4545D9B7DEF8FE99528B52FFD)
+
+prepare() {
+  cd ${_pkgname}-${pkgver}
+  # avoid error on tests without static libs, we use LD_LIBRARY_PATH
+  sed '/build static library to build tests/d' -i build/cmake/CMakeLists.txt
+  sed 's/libzstd_static/libzstd_shared/g' -i build/cmake/tests/CMakeLists.txt
+}
+
+build() {
+  cd ${_pkgname}-${pkgver}
+  export CC="gcc -m32"
+  export CXX="g++ -m32"
+  export ASMFLAGS="-m32"
+  export PKG_CONFIG_PATH="/usr/lib32/pkgconfig"
+
+  # https://github.com/facebook/zstd/issues/3819
+  # XXH64_update can be vectorized with AVX-512, but this is disabled by default
+  # due to Skylake's high latency for AVX-512 instructions. Re-enable this for
+  # Znver4, since unlike Intel u-archs, it doesn't suffer from high AVX-512 latency.
+  xxh64_vectorize=''
+
+  if [ -n "$_optimize_znver4" ]; then
+    xxh64_vectorize="-DXXH_ENABLE_AUTOVECTORIZE=ON"
+  fi
+
+  export CFLAGS+=" -ffat-lto-objects ${xxh64_vectorize}"
+  export CXXFLAGS+=" -ffat-lto-objects ${xxh64_vectorize}"
+
+  cmake -S build/cmake -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=None \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib32 \
+    -DZSTD_BUILD_CONTRIB=ON \
+    -DZSTD_BUILD_STATIC=OFF \
+    -DZSTD_BUILD_TESTS=ON \
+    -DZSTD_PROGRAMS_LINK_SHARED=ON
+  cmake --build build
+}
+
+check() {
+  cd ${_pkgname}-${pkgver}
+  LD_LIBRARY_PATH="$(pwd)/build/lib" \
+    ctest -VV --test-dir build
+}
+
+package() {
+  cd ${_pkgname}-${pkgver}
+  DESTDIR="${pkgdir}" cmake --install build
+  rm -rf "${pkgdir}"/usr/{share,include,bin}
+  install -Dm 644 LICENSE -t "${pkgdir}/usr/share/licenses/${pkgname}"
+}
+
+# vim: ts=2 sw=2 et:

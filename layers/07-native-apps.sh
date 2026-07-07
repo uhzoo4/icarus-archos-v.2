@@ -53,6 +53,31 @@ log "Installing chafa (terminal image renderer for fastfetch)..."
 try_install chafa
 
 # ---------------------------------------------------------------------------
+# 1c. Modern Terminal Toolchain (starship, eza, bat, zoxide, fzf, ripgrep, fd, gum)
+# ---------------------------------------------------------------------------
+log "Installing modern terminal toolchain and onboarding UI deps..."
+try_install starship eza bat zoxide fzf ripgrep fd gum
+
+log "Writing modern default .bashrc..."
+cat > /etc/skel/.bashrc << 'EOF'
+# ~/.bashrc
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+alias ls='eza --icons --group-directories-first'
+alias ll='eza -alF --icons --group-directories-first'
+alias cat='bat --style=plain'
+alias grep='rg'
+alias find='fd'
+
+eval "$(zoxide init bash)"
+eval "$(starship init bash)"
+EOF
+# Copy to existing user if they exist
+[[ -d /home/icarus ]] && cp /etc/skel/.bashrc /home/icarus/.bashrc && chown icarus:icarus /home/icarus/.bashrc
+
+# ---------------------------------------------------------------------------
 # 2. Bootstrap an AUR helper. paru-bin (prebuilt binary) avoids needing a
 #    Rust toolchain just to get the helper itself running.
 # ---------------------------------------------------------------------------
@@ -153,6 +178,49 @@ log "  - Office/Word/Excel/PowerPoint: office.com works fully in Chrome/Chromium
 log "  - Teams: Microsoft dropped native Linux Teams. Use teams.microsoft.com in Chrome, or 'paru -S teams-for-linux' for an unofficial wrapper."
 log "  - Edge (if you specifically want it over Chrome): 'paru -S microsoft-edge-stable-bin'."
 log "  - VS Code: 'paru -S visual-studio-code-bin' for the MS-branded build."
+
+# ---------------------------------------------------------------------------
+# 5. First-Boot Onboarding Script
+# ---------------------------------------------------------------------------
+log "Installing icarus-welcome onboarding script..."
+cat > /usr/local/bin/icarus-welcome << 'EOF'
+#!/usr/bin/env bash
+set -e
+
+# Mark as done immediately so it doesn't loop if they close the terminal
+mkdir -p "$HOME/.config/icarus"
+touch "$HOME/.config/icarus/.welcome-done"
+
+clear
+gum style --border double --margin "1" --padding "1 2" --border-foreground 212 "Welcome to Icarus-ArchOS"
+
+gum style "Let's get your engineering workstation ready."
+echo ""
+
+if ! ping -c 1 archlinux.org &>/dev/null; then
+    if gum confirm "You appear to be offline. Open Wi-Fi settings?"; then
+        kitty -e nmtui &
+        gum spin --spinner dot --title "Waiting for connection..." -- sleep 5
+    fi
+fi
+
+echo "Would you like to install optional engineering apps?"
+APPS=$(gum choose --no-limit "VS Code" "Docker" "Teams" "Edge")
+
+if [[ -n "$APPS" ]]; then
+    echo "Installing selected apps..."
+    [[ "$APPS" == *"VS Code"* ]] && paru -S --noconfirm visual-studio-code-bin
+    [[ "$APPS" == *"Docker"* ]] && sudo pacman -S --noconfirm docker docker-compose && sudo systemctl enable --now docker && sudo usermod -aG docker $USER
+    [[ "$APPS" == *"Teams"* ]] && paru -S --noconfirm teams-for-linux
+    [[ "$APPS" == *"Edge"* ]] && paru -S --noconfirm microsoft-edge-stable-bin
+    gum style --foreground 212 "Apps installed!"
+fi
+
+gum style "All set! Press SUPER+Space for your launcher, or SUPER+W to cycle wallpapers."
+echo "Press any key to exit."
+read -n 1
+EOF
+chmod +x /usr/local/bin/icarus-welcome
 
 mkdir -p "$ICARUS_LOG_DIR"
 touch "$SENTINEL"

@@ -1,0 +1,33 @@
+# Maintainer: Lysec <admin@lysec.dev>
+
+pkgname=cachyos-niri-noctalia
+pkgdesc='CachyOS Niri (+Noctalia) settings'
+pkgver=1.2.0
+pkgrel=1
+arch=('any')
+url="https://github.com/cachyos/$pkgname"
+license=(GPL-3.0-only)
+makedepends=('coreutils' 'git')
+source=(git+$url#tag=${pkgver})
+sha512sums=('e0d174c0e8954119faab1c9e9f06cdc512fc105f16d50c57bb98a591d6f5cb0490d181d2bc4abfc01227ddfbf05accc5802707d5837b3b8f5e8f0563f7698a6a')
+depends=(
+  adw-gtk-theme
+  cachyos-alacritty-config
+  capitaine-cursors
+  gnome-keyring
+  niri
+  noctalia-shell
+  noto-fonts
+  noto-fonts-emoji
+  wl-clipboard
+  xdg-desktop-portal-gnome
+  xdg-desktop-portal-gtk
+  xwayland-satellite
+)
+provides=('cachyos-desktop-settings')
+conflicts=('cachyos-desktop-settings')
+
+package() {
+  install -d "${pkgdir}/etc"
+  cp -rf "${srcdir}/${pkgname}/etc" "${pkgdir}"
+}
