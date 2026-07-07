@@ -46,6 +46,13 @@ log "Installing Chromium (native, official repo)..."
 try_install chromium
 
 # ---------------------------------------------------------------------------
+# 1b. chafa — enables fastfetch to render images as ASCII/sixel in the
+#     terminal. Official repo, no AUR needed.
+# ---------------------------------------------------------------------------
+log "Installing chafa (terminal image renderer for fastfetch)..."
+try_install chafa
+
+# ---------------------------------------------------------------------------
 # 2. Bootstrap an AUR helper. paru-bin (prebuilt binary) avoids needing a
 #    Rust toolchain just to get the helper itself running.
 # ---------------------------------------------------------------------------
@@ -106,6 +113,15 @@ aur_install google-chrome
 log "Installing theme packages (adw-gtk-theme, bibata-cursor-theme)..."
 aur_install adw-gtk-theme
 aur_install bibata-cursor-theme
+
+# ---------------------------------------------------------------------------
+# 3d. Eww dashboard dependencies. eww-wayland is the Wayland-native build
+#     variant (AUR-only); socat/jq/pamixer are runtime deps its widgets
+#     call out to for IPC and volume control.
+# ---------------------------------------------------------------------------
+log "Installing Eww dashboard dependencies..."
+aur_install eww-wayland
+try_install socat jq pamixer
 
 # ---------------------------------------------------------------------------
 # 3c. Live wallpaper. mpvpaper is AUR-only, hence installed here rather

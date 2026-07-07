@@ -27,3 +27,4 @@ layer-4-graphics:chroot:fatal:04-graphics.sh
 layer-5-ui-winhybrid:chroot:fatal:05-ui-winhybrid.sh
 layer-6-ai-engineering-perf:chroot:soft:06-ai-engineering-perf.sh
 layer-7-native-apps:chroot:soft:07-native-apps.sh
+layer-8-silent-boot:chroot:soft:08-silent-boot.sh

@@ -20,17 +20,25 @@ icarus-archos/
 │   ├── 03b-custom-kernel.sh        # Chroot: build linux-icarus (non-fatal on failure)
 │   ├── 03c-daemons.sh              # Chroot: NetworkManager, resolved, fstrim
 │   ├── 04-graphics.sh              # Chroot: Mesa/VA-API/VDPAU, multilib, burn-in tools
-│   ├── 05-ui-winhybrid.sh          # Chroot: Hyprland/Waybar/Wine/greetd stack
+│   ├── 05-ui-winhybrid.sh          # Chroot: Hyprland/Waybar/Wine/greetd + lock/idle/notifications/dashboard
 │   ├── 06-ai-engineering-perf.sh   # Chroot (soft): iGPU compute stack, sched_ext, memory/thermal tuning, dev tooling
-│   └── 07-native-apps.sh           # Chroot (soft): Chromium/Chrome, paru bootstrap, LibreOffice
+│   ├── 07-native-apps.sh           # Chroot (soft): Chromium/Chrome, paru bootstrap, LibreOffice, Eww deps
+│   └── 08-silent-boot.sh           # Chroot (soft): Plymouth splash + quiet boot, systemd-boot only
 ├── configs/
-│   ├── hypr/hyprland.conf
-│   ├── waybar/config.jsonc
-│   ├── waybar/style.css
-│   ├── rofi/icarus-spotlight.rasi
+│   ├── hypr/{hyprland,hyprlock,hypridle}.conf
+│   ├── waybar/{config.jsonc,style.css}
+│   ├── rofi/{icarus-spotlight,icarus,wallpaper}.rasi
+│   ├── dunst/dunstrc
+│   ├── kitty/{kitty.conf,open-actions.conf}
+│   ├── wlogout/{layout,style.css,icons/}
+│   ├── fastfetch/{config.jsonc,logo.txt}
+│   ├── cava/config
+│   ├── eww/{eww.yuck,eww.scss,dashboard.yuck,scripts/}
+│   ├── theme/{colors.conf,colors.css,colors.rasi,colors.sh,colors.scss,gtk.css}  — static defaults; icarus-palette regenerates these
+│   ├── wallpaper/{icarus-midnight.png,icarus-midnight-live.mp4,icarus-wallpaper.sh,switcher.sh,references/}
 │   └── wine/wine-wayland.sh
 └── pkgs/
-    └── linux-icarus/PKGBUILD       # Real now — mainline 7.2-rc1 via git+tag, see file header
+    └── linux-icarus/PKGBUILD       # mainline 7.2-rc1 via git+tag, see file header
 ```
 
 ## Usage
@@ -282,6 +290,84 @@ nothing reads them until first login, after every layer finishes.
   the color palette. Applied to `windowsIn`/`windowsOut` and
   `layersIn`/`layersOut` (so Rofi and notifications pop in the same way).
 
+## Desktop-completeness merge (lock screen, idle, notifications, dashboard, silent boot)
+
+A large batch of additions came in covering most of the gaps from the
+completeness assessment — `hyprlock`/`hypridle` (lock + idle chain),
+`dunstrc` (styled notifications), `wlogout` (power menu), `fastfetch` +
+`cava` (system info + audio visualizer), an `eww` dashboard, a
+wallpaper-driven dynamic accent-color system (`icarus-palette.py`), and a
+Plymouth silent-boot layer. Genuinely good additions, and comprehensively
+audited before merging — real bugs found and fixed rather than merged
+as-is:
+
+- **Layer 8 assumed GRUB.** This system uses `systemd-boot` exclusively
+  (`bootctl install` in Layer 3a) — no GRUB package is installed anywhere.
+  The original would have run `grub-install --efi-directory=/boot` against
+  the same ESP systemd-boot already manages (risking a broken/competing
+  bootloader), edited a `/etc/default/grub` that doesn't exist in this
+  build, and written kernel parameters to a `grub.cfg` systemd-boot never
+  reads — so even ignoring the risk, the actual feature wouldn't have
+  worked. Rewritten to insert the `plymouth` hook into the *existing*
+  mkinitcpio `HOOKS` array (never replace it wholesale) and patch the real
+  systemd-boot entries' kernel command lines directly.
+- **`/usr/local/bin/icarus-wallpaper` naming collision.** The live-wallpaper
+  startup daemon (mpvpaper/swaybg fallback, from the earlier theme pass)
+  and the new interactive wallpaper switcher both installed to the same
+  path — whichever ran last in Layer 5 silently overwrote the other. Now
+  two names: `icarus-wallpaper` (daemon, `exec-once`) and
+  `icarus-wallpaper-switch` (picker, bound to `SUPER+W`).
+- **Wrong path + missing directory.** Layer 5 checked for
+  `configs/wallpaper/switcher.sh`; the actual file was at
+  `configs/switcher.sh` (moved to match). The switcher also requires
+  `configs/wallpaper/references/`, which didn't exist anywhere — it would
+  have errored on first use. Now ships with the existing wallpaper as its
+  first entry.
+- **`SUPER SHIFT S` bound to two different actions** (screenshot-to-file
+  and move-to-special-workspace) — the second silently killed the first.
+  Special workspace moved to `SUPER ALT S`.
+- **`SUPER W`** pointed at the startup daemon instead of the switcher —
+  fixed to call `icarus-wallpaper-switch`.
+- **The same relative-import bug in four files**
+  (`../../icarus/theme/...` where only one `../` was correct — the
+  importing files live exactly one level below `~/.config/`, not two):
+  Layer 5's GTK `gtk.css` heredoc, `waybar/style.css`, `eww/eww.scss`
+  (which hadn't even made it into the repo before this pass — added now),
+  `wlogout/style.css`.
+- **`eww.scss` imports `colors.scss`, never pre-generated as a static
+  default** — the dashboard would fail to load until the wallpaper
+  switcher was run once manually. Added `colors.scss` and `colors.sh`
+  (also missing) as static defaults alongside the four that already
+  existed, matching exactly what `icarus-palette.py` generates.
+- **`eww daemon` was never started** — the `SUPER Tab` dashboard toggle
+  needs it running in the background first. Added to `exec-once`.
+- **"Hibernate" in the wlogout menu removed.** This system has zero
+  disk-backed swap (ZRAM only) — hibernation writes its image to swap
+  then cuts power entirely, which a RAM-backed swap device cannot survive.
+  A "Hibernate" button here would silently fail or lose state, not
+  gracefully degrade. Proper support (a real swapfile + `resume=` kernel
+  parameters on both boot entries) is a real feature, just not a five-line
+  fix — added to `ROADMAP.md`'s backlog instead of rushing it into this
+  pass.
+- **`hyprlock.conf`'s `$USER` in a plain `text =` field** — unlikely to
+  shell-expand reliably; wrapped in `cmd[update:0] echo "..."` matching
+  the pattern the same file already uses for the clock.
+- **No `layerrule = blur, eww-blur`** despite the dashboard's namespace
+  being named specifically for it — added alongside the existing
+  waybar/rofi/notifications rules.
+- **An unused overshoot bezier curve** (`softBounce`, y-value 1.2) sitting
+  in `hyprland.conf`, contradicting the no-bounce design rule and never
+  actually applied anywhere — removed.
+- **`icarus-palette.py`'s cava updater** collapsed a 4-stop gradient into
+  2 duplicated colors on every wallpaper change. Fixed to interpolate 4
+  distinct shades along the same hue — tested end-to-end with a synthetic
+  image before merging, not just read.
+
+Everything else — the keybind set, window rules, dwindle/misc tuning,
+dunst/kitty/wlogout/fastfetch/cava static styling, the dynamic
+accent-color system's overall design — was correct as submitted and
+merged as-is.
+
 ## Things you still need to check on your own hardware before running this
 
 - **Your exact Iris Xe generation.** Run `lspci -nn | grep -i vga` on the
@@ -322,3 +408,13 @@ nothing reads them until first login, after every layer finishes.
   notifications stop looking blurred after a Hyprland update, that's the
   first thing to check against the current wiki, not a sign something
   else broke.
+- **Test the lock screen before you rely on it.** `SUPER L` and lid-close
+  (via `hypridle`) should both trigger `hyprlock` — confirm the password
+  prompt actually accepts your login password before treating this as a
+  working security boundary.
+- **First boot won't have a custom accent color yet** — the static
+  defaults (steel blue) apply until you run the wallpaper switcher
+  (`SUPER W`) at least once. That's expected, not a bug.
+- **Proper hibernate support isn't implemented** — see the merge note
+  above. `Suspend` (RAM-only, no swap needed) works; `Hibernate` was
+  removed rather than shipped broken.

@@ -1,0 +1,97 @@
+@import "../icarus/theme/colors.scss";
+
+* {
+    all: unset;
+    font-family: "JetBrainsMono Nerd Font";
+}
+
+.dashboard-container {
+    background-color: rgba($bgBase, 0.85);
+    border: 1px solid $accentDark;
+    border-radius: 16px;
+    padding: 20px;
+}
+
+.profile-card {
+    background-color: rgba($bgSurface, 0.6);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid $accentDark;
+}
+
+.profile-name {
+    color: $textPrimary;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.quick-toggles {
+    margin-bottom: 15px;
+}
+
+.toggle-btn {
+    background-color: rgba($bgSurface, 0.6);
+    color: $textPrimary;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 24px;
+    border: 1px solid $accentDark;
+    transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+    background-color: rgba($accentDark, 0.8);
+    color: $accentLight;
+    border-color: $accent;
+}
+
+.sliders-box {
+    background-color: rgba($bgSurface, 0.6);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 1px solid $accentDark;
+}
+
+.slider scale trough highlight {
+    background-color: $accent;
+    border-radius: 10px;
+}
+
+.slider scale trough {
+    background-color: $bgBase;
+    border-radius: 10px;
+    min-height: 12px;
+    min-width: 250px;
+}
+
+.slider-icon {
+    color: $accentLight;
+    font-size: 20px;
+    margin-right: 15px;
+}
+
+.stats-box {
+    background-color: rgba($bgSurface, 0.6);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid $accentDark;
+}
+
+.stat-label {
+    color: $textPrimary;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.stat-bar scale trough highlight {
+    background-color: $accent;
+    border-radius: 5px;
+}
+
+.stat-bar scale trough {
+    background-color: $bgBase;
+    min-height: 10px;
+    border-radius: 5px;
+}

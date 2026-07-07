@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
 # layers/05-ui-winhybrid.sh
-# Hyprland/Waybar UI layer and native Wine-Wayland integration.
+# Hyprland/Waybar UI layer, native Wine-Wayland integration, lock screen,
+# idle management, notifications, power menu, system info, audio
+# visualizer, eww dashboard, and dynamic wallpaper-driven theming.
 #
 set -euo pipefail
 
@@ -22,6 +24,18 @@ pacman -S --noconfirm --needed \
     qt5-wayland qt6-wayland xdg-desktop-portal-hyprland polkit-kde-agent \
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp \
     greetd greetd-tuigreet papirus-icon-theme
+
+log "Installing lock screen, idle management, and power menu..."
+pacman -S --noconfirm --needed \
+    hyprlock hypridle wlogout
+
+log "Installing screenshot, clipboard, and brightness tools..."
+pacman -S --noconfirm --needed \
+    wl-clipboard cliphist brightnessctl playerctl
+
+log "Installing terminal extras and system info..."
+pacman -S --noconfirm --needed \
+    fastfetch cava pavucontrol python python-pillow
 
 log "Installing Wine / Windows-app compatibility stack..."
 pacman -S --noconfirm --needed \
@@ -53,20 +67,31 @@ EOF
 # in Layer 3a before this skeleton existed.
 # ---------------------------------------------------------------------------
 log "Installing config skeletons..."
-mkdir -p /etc/skel/.config/{hypr,waybar,rofi}
+mkdir -p /etc/skel/.config/{hypr,waybar,rofi,dunst,kitty,wlogout,fastfetch,cava,eww,icarus/theme}
 
-if [[ -f "${ICARUS_REPO_PATH}/configs/hypr/hyprland.conf" ]]; then
-    cp "${ICARUS_REPO_PATH}/configs/hypr/hyprland.conf" /etc/skel/.config/hypr/hyprland.conf
-else
-    fatal "Missing configs/hypr/hyprland.conf in repo payload."
-fi
+require_config() {
+    local src="$1" dst="$2"
+    if [[ -f "$src" ]]; then
+        cp "$src" "$dst"
+    else
+        fatal "Missing required config: $src"
+    fi
+}
 
-if [[ -f "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" ]]; then
-    cp "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" /etc/skel/.config/waybar/config.jsonc
-    cp "${ICARUS_REPO_PATH}/configs/waybar/style.css" /etc/skel/.config/waybar/style.css
-else
-    fatal "Missing configs/waybar/*.{jsonc,css} in repo payload."
-fi
+require_config "${ICARUS_REPO_PATH}/configs/hypr/hyprland.conf" /etc/skel/.config/hypr/hyprland.conf
+require_config "${ICARUS_REPO_PATH}/configs/hypr/hyprlock.conf" /etc/skel/.config/hypr/hyprlock.conf
+require_config "${ICARUS_REPO_PATH}/configs/hypr/hypridle.conf" /etc/skel/.config/hypr/hypridle.conf
+require_config "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" /etc/skel/.config/waybar/config.jsonc
+require_config "${ICARUS_REPO_PATH}/configs/waybar/style.css" /etc/skel/.config/waybar/style.css
+require_config "${ICARUS_REPO_PATH}/configs/dunst/dunstrc" /etc/skel/.config/dunst/dunstrc
+require_config "${ICARUS_REPO_PATH}/configs/kitty/kitty.conf" /etc/skel/.config/kitty/kitty.conf
+[[ -f "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" ]] && cp "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" /etc/skel/.config/kitty/open-actions.conf
+require_config "${ICARUS_REPO_PATH}/configs/wlogout/layout" /etc/skel/.config/wlogout/layout
+require_config "${ICARUS_REPO_PATH}/configs/wlogout/style.css" /etc/skel/.config/wlogout/style.css
+[[ -d "${ICARUS_REPO_PATH}/configs/wlogout/icons" ]] && cp -r "${ICARUS_REPO_PATH}/configs/wlogout/icons" /etc/skel/.config/wlogout/
+require_config "${ICARUS_REPO_PATH}/configs/fastfetch/config.jsonc" /etc/skel/.config/fastfetch/config.jsonc
+require_config "${ICARUS_REPO_PATH}/configs/fastfetch/logo.txt" /etc/skel/.config/fastfetch/logo.txt
+require_config "${ICARUS_REPO_PATH}/configs/cava/config" /etc/skel/.config/cava/config
 
 if [[ -f "${ICARUS_REPO_PATH}/configs/wine/wine-wayland.sh" ]]; then
     install -m 0755 "${ICARUS_REPO_PATH}/configs/wine/wine-wayland.sh" /etc/profile.d/wine-wayland.sh
@@ -74,26 +99,79 @@ else
     fatal "Missing configs/wine/wine-wayland.sh in repo payload."
 fi
 
+# --- Eww dashboard ---
+if [[ -d "${ICARUS_REPO_PATH}/configs/eww" ]]; then
+    cp -r "${ICARUS_REPO_PATH}/configs/eww/"* /etc/skel/.config/eww/
+    [[ -d /etc/skel/.config/eww/scripts ]] && chmod +x /etc/skel/.config/eww/scripts/*.sh
+else
+    fatal "Missing configs/eww/ in repo payload."
+fi
+
+# --- Rofi themes (system-wide default + skel copies of all variants) ---
 if [[ -f "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" ]]; then
-    log "Installing rofi theme system-wide..."
+    log "Installing rofi themes..."
     install -d /usr/share/rofi/themes
     install -m 0644 "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" /usr/share/rofi/themes/icarus-spotlight.rasi
 else
     fatal "Missing configs/rofi/icarus-spotlight.rasi in repo payload."
 fi
-
-if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" ]]; then
-    log "Installing wallpaper..."
-    install -d /usr/share/backgrounds/icarus
-    install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
+if [[ -d "${ICARUS_REPO_PATH}/configs/rofi" ]]; then
+    cp -r "${ICARUS_REPO_PATH}/configs/rofi/"* /etc/skel/.config/rofi/
 else
+    fatal "Missing configs/rofi/ in repo payload."
+fi
+
+# ---------------------------------------------------------------------------
+# Wallpapers. Two distinct tools, two distinct names — this distinction
+# matters and was a real bug earlier in this file's history:
+#   icarus-wallpaper        — the startup daemon wrapper (live video via
+#                              mpvpaper, falls back to static PNG via
+#                              swaybg). Runs once, via exec-once.
+#   icarus-wallpaper-switch — the interactive Rofi-based picker over
+#                              configs/wallpaper/references/. Runs
+#                              repeatedly, bound to SUPER+W.
+# Installing both to the same path would make one silently overwrite the
+# other depending on install order.
+# ---------------------------------------------------------------------------
+if [[ ! -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" ]]; then
     fatal "Missing configs/wallpaper/icarus-midnight.png in repo payload."
 fi
+install -d /usr/share/backgrounds/icarus
+install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
 
 if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" ]]; then
     install -m 0755 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" /usr/local/bin/icarus-wallpaper
 else
     fatal "Missing configs/wallpaper/icarus-wallpaper.sh in repo payload."
+fi
+
+if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/switcher.sh" ]]; then
+    log "Installing wallpaper switcher..."
+    install -m 0755 "${ICARUS_REPO_PATH}/configs/wallpaper/switcher.sh" /usr/local/bin/icarus-wallpaper-switch
+else
+    fatal "Missing configs/wallpaper/switcher.sh in repo payload."
+fi
+
+if [[ -d "${ICARUS_REPO_PATH}/configs/wallpaper/references" ]]; then
+    mkdir -p /usr/share/backgrounds/icarus/references
+    cp -r "${ICARUS_REPO_PATH}/configs/wallpaper/references/"* /usr/share/backgrounds/icarus/references/
+else
+    fatal "Missing configs/wallpaper/references/ in repo payload — the switcher would error on first use without it."
+fi
+
+# ---------------------------------------------------------------------------
+# Dynamic palette generator + static theme defaults. The defaults matter:
+# eww, GTK, and Waybar all import files under ~/.config/icarus/theme/ that
+# only get (re)generated when icarus-palette runs — without a pre-shipped
+# static default, those imports would fail on first login before the
+# wallpaper switcher is ever used.
+# ---------------------------------------------------------------------------
+if [[ -f "${ICARUS_REPO_PATH}/tools/icarus-palette.py" && -d "${ICARUS_REPO_PATH}/configs/theme" ]]; then
+    log "Installing icarus-palette generator and static theme defaults..."
+    install -m 0755 "${ICARUS_REPO_PATH}/tools/icarus-palette.py" /usr/local/bin/icarus-palette
+    cp -r "${ICARUS_REPO_PATH}/configs/theme" /etc/skel/.config/icarus/
+else
+    fatal "Missing tools/icarus-palette.py or configs/theme/ in repo payload."
 fi
 
 # ---------------------------------------------------------------------------
@@ -114,7 +192,29 @@ gtk-cursor-theme-name=Bibata-Modern-Ice
 gtk-cursor-theme-size=22
 gtk-application-prefer-dark-theme=1
 EOF
+# NOTE: exactly one ".." here, not two — this file lives at
+# /etc/skel/.config/<gtk-dir>/gtk.css, and the theme lives at
+# /etc/skel/.config/icarus/theme/gtk.css, which is one level up
+# (out of <gtk-dir>/) then into icarus/theme/, not two.
+cat > "/etc/skel/.config/${GTK_DIR}/gtk.css" << 'EOF'
+@import url("../icarus/theme/gtk.css");
+EOF
 done
+
+# ---------------------------------------------------------------------------
+# Fastfetch on terminal open — runs every time a new interactive bash
+# session starts so the Icarus branding is the first thing you see.
+# ---------------------------------------------------------------------------
+log "Adding fastfetch to shell startup..."
+if ! grep -q "fastfetch" /etc/skel/.bashrc 2>/dev/null; then
+    cat >> /etc/skel/.bashrc << 'EOF'
+
+# Icarus-ArchOS — show system info on terminal open
+if command -v fastfetch &>/dev/null; then
+    fastfetch
+fi
+EOF
+fi
 
 # ---------------------------------------------------------------------------
 # Display manager. Without this, boot lands at a plain TTY login and
@@ -129,7 +229,7 @@ cat > /etc/greetd/config.toml <<'EOF'
 vt = 1
 
 [default_session]
-command = "tuigreet --remember --remember-session --time --cmd Hyprland"
+command = "tuigreet --remember --remember-session --time --cmd Hyprland --theme 'border=darkgray;text=lightgray;prompt=lightgray;time=darkgray;action=blue;button=darkgray;container=black;input=white'"
 user = "greeter"
 EOF
 

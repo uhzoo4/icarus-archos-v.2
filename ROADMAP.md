@@ -12,10 +12,15 @@ anything new.
 - Guaranteed-bootable stock kernel + systemd-boot (Layer 3a)
 - Custom kernel build, non-fatal by design (Layer 3b)
 - Daemons, graphics stack, GPU-generation detection (Layers 3c–4)
-- Hyprland desktop, Waybar, Rofi, greetd login, Wine-Wayland (Layer 5)
+- Hyprland desktop, Waybar, Rofi, greetd login, Wine-Wayland, lock screen
+  (hyprlock), idle management (hypridle), styled notifications (dunst),
+  power menu (wlogout), system info (fastfetch), audio visualizer (cava),
+  Eww dashboard, wallpaper-driven dynamic accent-color system
+  (`icarus-palette.py`) (Layer 5)
 - iGPU compute stack (OpenVINO/PyTorch-XPU), sched_ext scheduler,
   memory/thermal tuning, dev tooling (Layer 6)
 - Native browser/Office layer + AUR helper bootstrap (Layer 7)
+- Plymouth silent boot, systemd-boot only (Layer 8)
 - Manifest-driven conductor (`layers/MANIFEST`) — see "Adding a new layer" below
 - `burn-in-checklist.md` for post-install validation
 
@@ -27,13 +32,22 @@ anything new.
   see "Adding a kernel patch" below for where they'd go
 - Layer 7's AUR bootstrap (`paru`) hasn't been tested against a real
   network — if it fails, Chromium/LibreOffice from earlier in the same
-  layer are unaffected, but Chrome/Teams/Edge/VS Code won't install
-  until it's fixed
+  layer are unaffected, but Chrome/Teams/Edge/VS Code/eww-wayland/theme
+  packages won't install until it's fixed
 - Specific engineering/CAD software (MATLAB, SolidWorks, etc.) isn't
   mapped yet — Wine compatibility varies wildly per app; needs a
   per-app decision (native/web/Wine/VM) once the actual list is known
+- No proper hibernate support — this system has zero disk-backed swap
+  (ZRAM only), so hibernation cannot work as-is; the wlogout "Hibernate"
+  option was removed rather than shipped broken. Real implementation
+  needs a Btrfs-aware swapfile (NOCOW, sized ≥ RAM) plus `resume=` /
+  `resume_offset=` kernel parameters on both boot entries — see the
+  backlog below.
+- No Bluetooth stack at all (not installed, not just missing a GUI) and
+  no firewall — both real gaps, neither addressed yet
 - No automated testing of the scripts themselves (only syntax-checked) —
   the only real test is running the whole thing on your actual hardware
+
 
 ## The rule for anything new
 
@@ -88,12 +102,30 @@ inline somewhere it doesn't belong.
 - GTT (iGPU shared-memory) size tuning for AI workloads on 8GB total RAM
   — not addressed yet; worth investigating once real OpenVINO/llama.cpp
   workloads reveal whether the default carveout is actually a constraint.
+- **Proper hibernate support.** Needs: a Btrfs-aware swapfile (NOCOW via
+  `chattr +C`, sized ≥ total RAM, allocated with `fallocate` not sparse),
+  the physical offset computed for `resume_offset=`, and `resume=UUID=...
+  resume_offset=...` added to both `icarus-fallback.conf` and
+  `icarus-custom.conf`. The wlogout "Hibernate" button was removed rather
+  than shipped against a swap setup (ZRAM-only) that can't actually
+  survive a full power-off. This touches Layer 1 (swapfile), 3a, and 3b
+  (boot params) — do it as its own focused pass, not bundled into
+  unrelated changes.
+- Bluetooth stack (`bluez`, `bluez-utils`, and a GUI like `blueman`) —
+  currently doesn't exist at any level, not just missing a GUI front-end.
+- A firewall (`ufw` or `firewalld`) — this system currently has none.
 
 **Desktop / UX**
 - Additional Waybar modules (media player controls, weather, etc.)
 - A proper macOS-style dock (e.g. `nwg-dock-hyprland`) instead of relying
   on Waybar alone for app switching
 - Per-app Hyprland window rules beyond the current Wine defaults
+- Dunst and kitty don't participate in the dynamic wallpaper-driven accent
+  system (`icarus-palette.py`) — both use static hardcoded colors, unlike
+  Hyprland/Waybar/Rofi/GTK/Eww/Cava. Dunst's config format has no import
+  mechanism so this is an inherent limitation there; kitty does support
+  `include`, so a kitty-format color fragment could be added to the
+  generator's output if this is worth closing.
 
 **Windows compatibility**
 - Per-application Bottles presets checked into the repo (exported Bottles
@@ -103,8 +135,9 @@ inline somewhere it doesn't belong.
   priority beyond general app compatibility
 - Specific engineering/CAD software mapping (see "Open / in progress"
   above) — this is the actual next step once the app list is known,
-  probably a `layers/08-engineering-apps.sh` or a QEMU/KVM Windows VM
-  for anything Wine genuinely can't handle
+  probably a `layers/09-engineering-apps.sh` (Layer 8 is now Plymouth
+  silent boot) or a QEMU/KVM Windows VM for anything Wine genuinely
+  can't handle
 
 **Operational**
 - A `snapshot` layer using Btrfs snapshots of `@` before risky changes
