@@ -1,0 +1,21 @@
+{
+    "option_map": {
+        "cachy_config": "_cachy_config",
+        "nconfig": "_makenconfig",
+        "xconfig": "_makexconfig",
+        "localmodcfg": "_localmodcfg",
+        "use_current": "_use_current",
+        "hardly": "_cc_harder",
+        "per_gov": "_per_gov",
+        "tcp_bbr3": "_tcp_bbr3",
+        "HZ_ticks": "_HZ_ticks",
+        "tickrate": "_tickrate",
+        "preempt": "_preempt",
+        "hugepage": "_hugepage",
+        "cpu_opt": "_processor_opt",
+        "lto": "_use_llvm_lto",
+        "builtin_zfs": "_build_zfs",
+        "builtin_nvidia_open": "_build_nvidia_open",
+        "build_debug": "_build_debug"
+    }
+}

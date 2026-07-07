@@ -1,0 +1,3 @@
+[nginx]
+source = "archpkg"
+archpkg = "nginx"

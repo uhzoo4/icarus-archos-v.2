@@ -1,0 +1,44 @@
+# Maintainer: Michael Bolden <me@sm9.dev>
+# Maintainer: Peter Jung <admin@ptr1337.dev>
+
+pkgname=cachyos-gaming-meta
+pkgver=1.0.0
+pkgrel=7
+epoch=1
+arch=(any)
+pkgdesc='Meta package for Gaming dependencies'
+depends=(
+  alsa-plugins
+  giflib
+  glfw
+  gst-plugins-base-libs
+  lib32-alsa-plugins
+  lib32-giflib
+  lib32-gtk3
+  lib32-libjpeg-turbo
+  lib32-libva
+  lib32-mpg123
+  lib32-ocl-icd
+  lib32-opencl-icd-loader
+  lib32-openal
+  libjpeg-turbo
+  libva
+  libxslt
+  mpg123
+  opencl-icd-loader
+  openal
+  proton-cachyos-slr
+  umu-launcher
+  protontricks
+  ttf-liberation
+  wine-cachyos-opt
+  winetricks
+  vulkan-tools
+)
+
+source=('99-splitlock.conf')
+sha256sums=('76cded15c34773ab77672fba4bf3e00452256b09f9b58e59334b9b8848cddcba')
+
+package() {
+  install -Dm644 "$srcdir/99-splitlock.conf" "$pkgdir/usr/lib/sysctl.d/99-splitlock.conf"
+}

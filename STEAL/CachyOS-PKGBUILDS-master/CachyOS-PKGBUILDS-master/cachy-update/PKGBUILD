@@ -1,0 +1,49 @@
+# Maintainer: Robin Candau <antiz@archlinux.org>
+
+pkgname=cachy-update
+pkgver=3.20.3
+pkgrel=1
+pkgdesc="An update notifier & applier that assists you with important pre / post update tasks"
+url="https://github.com/CachyOS/cachy-update"
+arch=('any')
+license=('GPL-3.0-or-later')
+depends=('bash' 'systemd' 'pacman' 'pacman-contrib' 'archlinux-contrib' 'curl' 'fakeroot' 'util-linux'
+         'htmlq' 'diffutils' 'hicolor-icon-theme' 'python' 'python-pyqt6' 'qt6-svg' 'glib2' 'xdg-utils')
+makedepends=('scdoc' 'git')
+checkdepends=('bats')
+conflicts=('arch-update')
+optdepends=('paru: AUR Packages support'
+            'yay: AUR Packages support'
+            'pikaur: AUR Packages support'
+            'flatpak: Flatpak Packages support'
+            'libnotify: Desktop notifications support on new available updates'
+            'alhp-utils: Check for ALHP build queue or outdated mirrors'
+            'vim: Default diff program for pacdiff'
+            'neovim: Default diff program for pacdiff if EDITOR=nvim'
+            'sudo: Privilege elevation'
+            'sudo-rs: Privilege elevation'
+            'opendoas: Privilege elavation')
+source=("git+https://github.com/CachyOS/cachy-update#commit=b50fdd509e62fc04cbf8581bb7f79802c08e057f")
+sha256sums=('bc342607f83ca402f01f7e1893097fe340678a313d106bcba635f6b0194ac776')
+
+prepare() {
+    cd "${pkgname}"
+    make clean
+}
+
+build() {
+    cd "${pkgname}"
+    make
+}
+
+check() {
+    cd "${pkgname}"
+    make test
+}
+
+package() {
+    cd "${pkgname}"
+    make PREFIX=/usr DESTDIR="${pkgdir}" install
+
+    ln -s arch-update "${pkgdir}/usr/bin/${pkgname}"
+}

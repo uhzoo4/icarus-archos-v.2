@@ -1,0 +1,655 @@
+.
+├── archlinux-keyring
+│   ├── archlinux-keyring.install
+│   └── PKGBUILD
+├── asp.sh
+├── bash
+│   ├── bash52-001
+│   ├── bash52-002
+│   ├── bash52-003
+│   ├── bash52-004
+│   ├── bash52-005
+│   ├── bash52-006
+│   ├── bash52-007
+│   ├── bash52-008
+│   ├── bash52-009
+│   ├── bash52-010
+│   ├── bash52-011
+│   ├── bash52-012
+│   ├── bash52-013
+│   ├── bash52-014
+│   ├── bash52-015
+│   ├── bash52-016
+│   ├── bash52-017
+│   ├── bash52-018
+│   ├── bash52-019
+│   ├── bash52-020
+│   ├── bash52-021
+│   ├── bash52-022
+│   ├── bash52-023
+│   ├── bash52-024
+│   ├── bash52-025
+│   ├── bash52-026
+│   ├── bash52-027
+│   ├── bash52-028
+│   ├── bash52-029
+│   ├── bash52-030
+│   ├── bash52-031
+│   ├── bash52-032
+│   ├── bash52-033
+│   ├── bash52-034
+│   ├── bash52-035
+│   ├── bash52-036
+│   ├── bash52-037
+│   ├── bash-5.2_p15-configure-clang16.patch
+│   ├── bash-5.2_p15-random-ub.patch
+│   ├── bash-5.2_p21-configure-strtold.patch
+│   ├── bash-5.2_p21-wpointer-to-int.patch
+│   ├── bash-5.2_p26-memory-leaks.patch
+│   ├── bash-5.2_p32-memory-leaks.patch
+│   ├── bash-5.2_p32-read-delimiter-in-invalid-mbchar.patch
+│   ├── bash.install
+│   ├── dot.bash_logout
+│   ├── dot.bash_profile
+│   ├── dot.bashrc
+│   ├── PKGBUILD
+│   ├── system.bash_logout
+│   └── system.bashrc
+├── bpftune-git
+│   ├── fix-makefile.patch
+│   └── PKGBUILD
+├── cachy-browser
+│   ├── cachy-browser.desktop
+│   ├── cachy-browser.install
+│   ├── line-breakers-fix.patch
+│   ├── match.patch
+│   ├── PKGBUILD
+│   └── wasi-sysroot-path.patch
+├── cachy-chroot
+│   └── PKGBUILD
+├── cachyos-ananicy-rules
+│   └── PKGBUILD
+├── cachyos-benchmarker
+│   └── PKGBUILD
+├── cachyos-calamares
+│   └── PKGBUILD
+├── cachyos-cli-installer-new
+│   └── PKGBUILD
+├── cachyos-fish-config
+│   ├── cachyos-fish-config.install
+│   └── PKGBUILD
+├── cachyos-gaming-applications
+│   └── PKGBUILD
+├── cachyos-gaming-meta
+│   └── PKGBUILD
+├── cachyos-gnome-settings
+│   ├── cachyos-gnome-settings.install
+│   └── PKGBUILD
+├── cachyos-grub-theme
+│   ├── cachyos-grub-theme.install
+│   └── PKGBUILD
+├── cachyos-hello
+│   └── PKGBUILD
+├── cachyos-hello-git
+│   └── PKGBUILD
+├── cachyos-hooks
+│   └── PKGBUILD
+├── cachyos-hyprland-settings
+│   └── PKGBUILD
+├── cachyos-i3wm-settings
+│   ├── cachyos-i3wm-settings.install
+│   └── PKGBUILD
+├── cachyos-kde-settings
+│   ├── cachyos-kde-settings.install
+│   └── PKGBUILD
+├── cachyos-kdump-tools
+│   ├── cachyos-kdump-tools.install
+│   └── PKGBUILD
+├── cachyos-kernel-manager
+│   ├── fix-installed-db.patch
+│   └── PKGBUILD
+├── cachyos-kernel-manager-git
+│   ├── fix-installed-db.patch
+│   └── PKGBUILD
+├── cachyos-keyring
+│   ├── cachyos.gpg
+│   ├── cachyos-keyring.install
+│   ├── cachyos-revoked
+│   ├── cachyos-trusted
+│   └── PKGBUILD
+├── cachyos-mirrorlist
+│   ├── cachyos-mirrorlist
+│   └── PKGBUILD
+├── cachyos-nord-gtk
+│   └── PKGBUILD
+├── cachyos-nord-kde
+│   └── PKGBUILD
+├── cachyos-openbox-settings
+│   ├── cachyos-openbox-settings.install
+│   └── PKGBUILD
+├── cachyos-packageinstaller
+│   └── PKGBUILD
+├── cachyos-plymouth-spinner
+│   └── PKGBUILD
+├── cachyos-plymouth-theme
+│   └── PKGBUILD
+├── cachyos-qtile-settings
+│   ├── cachyos-qtile-settings.install
+│   └── PKGBUILD
+├── cachyos-rate-mirrors
+│   ├── cachyos-rate-mirrors
+│   ├── cachyos-rate-mirrors.hook
+│   ├── cachyos-rate-mirrors.install
+│   ├── cachyos-rate-mirrors.service
+│   ├── cachyos-rate-mirrors.timer
+│   └── PKGBUILD
+├── cachyos-settings
+│   ├── cachyos-settings.install
+│   └── PKGBUILD
+├── cachyos-snapper-support
+│   ├── cachyos-snapper-support.install
+│   ├── PKGBUILD
+│   └── snapper-template-root-cachyos
+├── cachyos-sysctl-manager
+│   └── PKGBUILD
+├── cachyos-sysctl-manager-git
+│   └── PKGBUILD
+├── cachyos-themes-sddm
+│   ├── cachyos-themes-sddm.install
+│   └── PKGBUILD
+├── cachyos-v3-mirrorlist
+│   ├── cachyos-v3-mirrorlist
+│   └── PKGBUILD
+├── cachyos-v4-mirrorlist
+│   ├── cachyos-v4-mirrorlist
+│   └── PKGBUILD
+├── cachyos-wallpapers
+│   └── PKGBUILD
+├── cachyos-wayfire-settings
+│   ├── cachyos-wayfire-settings.install
+│   └── PKGBUILD
+├── cachyos-xfce-settings
+│   ├── cachyos-xfce-settings.install
+│   └── PKGBUILD
+├── cachyos-zsh-config
+│   └── PKGBUILD
+├── char-white
+│   └── PKGBUILD
+├── chwd
+│   └── PKGBUILD
+├── clang
+│   ├── 0001-Enable-TuningSlowDivide64-on-Barcelona-Bobcat-Bulldo.patch
+│   ├── 0002-Reduce-znver3-4-LoopMicroOpBufferSize-to-practical-l.patch
+│   ├── clangd-handle-missing-ending-brace.patch
+│   ├── clang-disable-float128-diagnostics-for-device-compilation.patch
+│   ├── enable-fstack-protector-strong-by-default.patch
+│   └── PKGBUILD
+├── cosmic
+│   ├── build-order.txt
+│   ├── cosmic-applets
+│   │   └── PKGBUILD
+│   ├── cosmic-app-library
+│   │   └── PKGBUILD
+│   ├── cosmic-bg
+│   │   └── PKGBUILD
+│   ├── cosmic-comp
+│   │   └── PKGBUILD
+│   ├── cosmic-files
+│   │   └── PKGBUILD
+│   ├── cosmic-greeter
+│   │   ├── cosmic-greeter-display-manager.patch
+│   │   ├── cosmic-greeter-lto.patch
+│   │   └── PKGBUILD
+│   ├── cosmic-icon-theme
+│   │   └── PKGBUILD
+│   ├── cosmic-launcher
+│   │   └── PKGBUILD
+│   ├── cosmic-notifications
+│   │   └── PKGBUILD
+│   ├── cosmic-osd
+│   │   └── PKGBUILD
+│   ├── cosmic-panel
+│   │   └── PKGBUILD
+│   ├── cosmic-randr
+│   │   └── PKGBUILD
+│   ├── cosmic-screenshot
+│   │   └── PKGBUILD
+│   ├── cosmic-session
+│   │   └── PKGBUILD
+│   ├── cosmic-settings
+│   │   └── PKGBUILD
+│   ├── cosmic-settings-daemon
+│   │   └── PKGBUILD
+│   ├── cosmic-store
+│   │   └── PKGBUILD
+│   ├── cosmic-terminal
+│   │   └── PKGBUILD
+│   ├── cosmic-text-editor
+│   │   └── PKGBUILD
+│   ├── cosmic-wallpapers
+│   │   └── PKGBUILD
+│   ├── cosmic-workspaces
+│   │   └── PKGBUILD
+│   ├── generate-srcinfo.sh
+│   ├── pop-icon-theme
+│   │   └── PKGBUILD
+│   ├── pop-launcher
+│   │   ├── PKGBUILD
+│   │   └── pop-launcher-symlinks.patch
+│   ├── pop-sound-theme-git
+│   │   └── PKGBUILD
+│   └── xdg-desktop-portal-cosmic
+│       ├── PKGBUILD
+│       └── xdg-desktop-portal-cosmic-lto.patch
+├── crash
+│   ├── fix-crash.patch
+│   └── PKGBUILD
+├── ddcutil
+│   └── PKGBUILD
+├── devtools
+│   ├── 9fc61fc4325cfe36dc86353137eb38041c79275f.patch
+│   └── PKGBUILD
+├── dkms
+│   ├── dkms.install
+│   ├── hook.install
+│   ├── hook.remove
+│   ├── hook.sh
+│   ├── hook.upgrade
+│   └── PKGBUILD
+├── dracut-cachyos
+│   ├── 60-dracut-remove.hook
+│   ├── 90-dracut-install.hook
+│   ├── dracut-cachyos.conf
+│   ├── dracut-install
+│   ├── dracut-rebuild
+│   ├── dracut-remove
+│   ├── module-setup.sh
+│   ├── PKGBUILD
+│   └── snapshot-overlay.sh
+├── Files
+├── go
+│   └── PKGBUILD
+├── grub-btrfs-support
+│   ├── grub-btrfs-snapper.path
+│   ├── grub-btrfs-snapper.service
+│   ├── grub-btrfs-support.install
+│   └── PKGBUILD
+├── handheld
+│   ├── cachyos-handheld
+│   │   ├── cachyos-handheld.install
+│   │   └── PKGBUILD
+│   ├── cachyos-vapor
+│   │   └── PKGBUILD
+│   ├── gamescope-session-steam-git
+│   │   ├── PKGBUILD
+│   │   └── steam-exports.patch
+│   ├── jupiter-fan-control
+│   │   └── PKGBUILD
+│   ├── jupiter-hw-support
+│   │   ├── cachyos-automount.patch
+│   │   ├── PKGBUILD
+│   │   ├── priv-write.patch
+│   │   ├── pythonhid.patch
+│   │   ├── steamos-btrfs-automount.patch
+│   │   └── udev-automount-rules.patch
+│   ├── powerbuttond
+│   │   └── PKGBUILD
+│   ├── rogue-enemy
+│   │   ├── PKGBUILD
+│   │   ├── rogue-enemy.service
+│   │   └── stray-ally.service
+│   ├── steam
+│   │   ├── fix-downloadspeed.patch
+│   │   ├── PKGBUILD
+│   │   ├── steam_1.0.0.81.dsc
+│   │   └── steam-runtime.sh
+│   ├── steamdeck-dsp
+│   │   └── PKGBUILD
+│   └── unused
+│       ├── gamescope
+│       │   ├── chimera.patch
+│       │   └── PKGBUILD
+│       ├── gamescope-plus
+│       │   ├── 0001-explicit-sync.patch
+│       │   └── PKGBUILD
+│       └── gamescope-session-git
+│           ├── deck-quirks.patch
+│           ├── force-wsi.patch
+│           ├── gamescope-session.install
+│           ├── PKGBUILD
+│           └── powerbuttond.patch
+├── java
+│   ├── java17-openjdk
+│   │   ├── freedesktop-java.desktop
+│   │   ├── freedesktop-jconsole.desktop
+│   │   ├── freedesktop-jshell.desktop
+│   │   ├── install_jdk-openjdk.sh
+│   │   ├── install_jre-openjdk-headless.sh
+│   │   ├── install_jre-openjdk.sh
+│   │   └── PKGBUILD
+│   └── java21-openjdk
+│       ├── freedesktop-java.desktop
+│       ├── freedesktop-jconsole.desktop
+│       ├── freedesktop-jshell.desktop
+│       ├── install_jdk-openjdk.sh
+│       ├── install_jre-openjdk-headless.sh
+│       ├── install_jre-openjdk.sh
+│       └── PKGBUILD
+├── kodi
+│   └── PKGBUILD
+├── kwin
+│   ├── 6178.patch
+│   ├── kwin-6.2.0.tar.xz.sig
+│   ├── kwin.install
+│   └── PKGBUILD
+├── libpamac-aur
+│   ├── 0001-add-arches-from-pacman-func-call.patch
+│   ├── 0001-flatpak_trans_run.patch
+│   ├── 0002-flatpak_runtime.patch
+│   ├── fix-appstream-data.hook
+│   ├── fix-appstream-data.sh
+│   ├── pamac.install
+│   └── PKGBUILD
+├── llvm
+│   ├── 0001-Enable-TuningSlowDivide64-on-Barcelona-Bobcat-Bulldo.patch
+│   ├── 0002-Reduce-znver3-4-LoopMicroOpBufferSize-to-practical-l.patch
+│   ├── 0003-disable-gather-znver4.patch
+│   ├── llvm-SelectionDAG.patch
+│   └── PKGBUILD
+├── llvm-git
+│   ├── lib32-llvm-git
+│   │   └── PKGBUILD
+│   ├── llvm-git
+│   │   ├── llvm-config.h
+│   │   └── PKGBUILD
+│   ├── wasi-compiler-rt-git
+│   │   ├── PKGBUILD
+│   │   ├── WASI.cmake
+│   │   └── wasi-toolchain.cmake
+│   ├── wasi-libc-git
+│   │   └── PKGBUILD
+│   └── wasi-libcplusplus-git
+│       ├── PKGBUILD
+│       ├── WASI.cmake
+│       └── wasi-sdk.cmake
+├── localsearch
+│   └── PKGBUILD
+├── lz4
+│   └── PKGBUILD
+├── mesa
+│   ├── lib32-mesa
+│   │   └── PKGBUILD
+│   ├── mesa
+│   │   └── PKGBUILD
+│   └── mesa-git
+│       ├── customization.cfg
+│       ├── LICENSE
+│       ├── llvm32.native
+│       ├── mesa-userpatches
+│       │   └── README.md
+│       └── PKGBUILD
+├── mpv-git
+│   └── PKGBUILD
+├── mutter-cachyos
+│   ├── 1441.patch
+│   └── PKGBUILD
+├── nodejs
+│   ├── PKGBUILD
+│   └── rebuild.list
+├── nvidia
+│   ├── lib32-nvidia-utils
+│   │   └── PKGBUILD
+│   ├── nvidia-390xx-utils
+│   │   ├── clang.patch
+│   │   ├── gcc-14.patch
+│   │   ├── kernel-4.16+-memory-encryption.patch
+│   │   ├── kernel-6.10.patch
+│   │   ├── kernel-6.2.patch
+│   │   ├── kernel-6.3.patch
+│   │   ├── kernel-6.4.patch
+│   │   ├── kernel-6.5.patch
+│   │   ├── kernel-6.6.patch
+│   │   ├── kernel-6.8.patch
+│   │   ├── nvidia-390xx.rules
+│   │   ├── nvidia-390xx-utils.install
+│   │   ├── nvidia-390xx-utils.sysusers
+│   │   ├── nvidia-drm-outputclass.conf
+│   │   ├── PKGBUILD
+│   │   ├── systemd-homed-override.conf
+│   │   └── systemd-suspend-override.conf
+│   ├── nvidia-470xx-utils
+│   │   ├── 0001-Fix-conftest-to-ignore-implicit-function-declaration.patch
+│   │   ├── 0002-Fix-conftest-to-use-a-short-wchar_t.patch
+│   │   ├── 0003-Fix-conftest-to-use-nv_drm_gem_vmap-which-has-the-se.patch
+│   │   ├── clang.patch
+│   │   ├── kernel-6.10.patch
+│   │   ├── kernel-6.1.76_6.6.15_6.7.3.patch
+│   │   ├── kernel-6.4.patch
+│   │   ├── kernel-6.5.patch
+│   │   ├── kernel-6.6.patch
+│   │   ├── nvidia-470xx.rules
+│   │   ├── nvidia-470xx-utils.install
+│   │   ├── nvidia-470xx-utils.sysusers
+│   │   ├── nvidia-drm-outputclass.conf
+│   │   ├── PKGBUILD
+│   │   ├── systemd-homed-override.conf
+│   │   └── systemd-suspend-override.conf
+│   ├── nvidia-535xx-utils
+│   │   ├── 6.11-fbdev.patch
+│   │   ├── linux-6.10.patch
+│   │   ├── nvidia-535xx-utils.install
+│   │   ├── nvidia-drm-outputclass.conf
+│   │   ├── nvidia.rules
+│   │   ├── nvidia-utils.sysusers
+│   │   └── PKGBUILD
+│   ├── nvidia-550xx
+│   │   ├── lib32-nvidia-550xx-utils
+│   │   │   └── PKGBUILD
+│   │   └── nvidia-550xx-dkms
+│   │       ├── nvidia-drivers-470.223.02-gpl-pfn_valid.patch
+│   │       ├── nvidia-drm-outputclass.conf
+│   │       ├── nvidia.rules
+│   │       ├── nvidia-utils.install
+│   │       ├── nvidia-utils.sysusers
+│   │       ├── PKGBUILD
+│   │       ├── systemd-homed-override.conf
+│   │       └── systemd-suspend-override.conf
+│   ├── nvidia-open-dkms
+│   │   ├── 0001-Make-modeset-and-fbdev-default-enabled.patch
+│   │   ├── 0002-Do-not-error-on-unkown-CPU-Type-and-add-Zen5-support.patch
+│   │   ├── 0003-Add-IBT-Support.patch
+│   │   ├── 0004-6.11-Add-fix-for-fbdev.patch
+│   │   ├── 0005-6.12-drm_outpull_pill-changed-check.patch
+│   │   ├── 0006-Fix-for-6.12.0-rc1-drm_mode_config_funcs.output_poll.patch
+│   │   ├── 0007-Replace-PageSwapCache-for-6.12-kernel.patch
+│   │   ├── 0008-silence-event-assert-until-570.patch
+│   │   └── PKGBUILD
+│   ├── nvidia-settings
+│   │   ├── nvidia-settings-libxnvctrl_so.patch
+│   │   └── PKGBUILD
+│   └── nvidia-utils
+│       ├── 0001-Make-modeset-and-fbdev-default-enabled.patch
+│       ├── 0004-6.11-Add-fix-for-fbdev.patch
+│       ├── 0006-Fix-for-6.12.0-rc1-drm_mode_config_funcs.output_poll.patch
+│       ├── limit-vram-buffer
+│       ├── nvidia-drm-outputclass.conf
+│       ├── nvidia.rules
+│       ├── nvidia-sleep.conf
+│       ├── nvidia-utils.install
+│       ├── nvidia-utils.sysusers
+│       ├── PKGBUILD
+│       ├── systemd-homed-override.conf
+│       └── systemd-suspend-override.conf
+├── openblas
+│   ├── openblas-v3
+│   │   └── PKGBUILD
+│   └── openblas-v4
+│       └── PKGBUILD
+├── openjdk
+│   └── java17-openjdk
+│       ├── freedesktop-java.desktop
+│       ├── freedesktop-jconsole.desktop
+│       ├── freedesktop-jshell.desktop
+│       ├── install_jdk-openjdk.sh
+│       ├── install_jre-openjdk-headless.sh
+│       ├── install_jre-openjdk.sh
+│       └── PKGBUILD
+├── opentabletdriver
+│   ├── notes.install
+│   ├── opentabletdriver.desktop
+│   └── PKGBUILD
+├── pacman
+│   ├── 78cd453.patch
+│   ├── alpm.sysusers
+│   ├── disable-always-stale.patch
+│   ├── fix-alpm-crate-for-aarch64.patch
+│   ├── makepkg.conf
+│   ├── pacman.conf
+│   ├── PKGBUILD
+│   ├── rust.conf
+│   ├── sqlite-src-3460100.zip
+│   └── static_sqlite.patch
+├── pacutils
+│   ├── Add-PrettyProgressBar-config-option.patch
+│   └── PKGBUILD
+├── pak-git
+│   └── PKGBUILD
+├── php
+│   ├── 0005-Enable-hugepages.patch
+│   ├── apache.conf
+│   ├── apache.patch
+│   ├── bench.php
+│   ├── generate_patches
+│   ├── php-cachy.patch
+│   ├── php-fpm.patch
+│   ├── php-fpm.tmpfiles
+│   ├── php.ini.patch
+│   ├── PKGBUILD
+│   └── PKGBUILD.pgo
+├── power-profiles-daemon
+│   └── PKGBUILD
+├── proton-cachyos
+│   ├── dxvk-reflex.patch
+│   ├── PKGBUILD
+│   └── proton-cachyos.install
+├── python
+│   ├── canrebuild
+│   ├── EXTERNALLY-MANAGED
+│   ├── genrebuild
+│   └── PKGBUILD
+├── README.md
+├── ripgrep
+│   ├── optimize.patch
+│   └── PKGBUILD
+├── scx-scheds
+│   ├── scx-scheds
+│   │   └── PKGBUILD
+│   └── scx-scheds-git
+│       └── PKGBUILD
+├── sddm
+│   ├── 0001-Revert-cmake-remove-the-final-Arch-PAM-modules.patch
+│   └── PKGBUILD
+├── sqlite3
+│   ├── license.txt
+│   ├── PKGBUILD
+│   └── sqlite-lemon-system-template.patch
+├── svt-av1
+│   └── PKGBUILD
+├── svt-av1-psy
+│   └── PKGBUILD
+├── systemd-boot-manager
+│   ├── LICENSE
+│   ├── PKGBUILD
+│   ├── sdboot-kernel-remove.hook
+│   ├── sdboot-kernel-update.hook
+│   ├── sdboot-manage
+│   ├── sdboot-manage.conf
+│   └── sdboot-systemd-update.hook
+├── tinysparql
+│   └── PKGBUILD
+├── toolchain
+│   ├── binutils
+│   │   ├── gold-warn-unsupported.patch
+│   │   └── PKGBUILD
+│   ├── gcc
+│   │   ├── 0001-Zen5-tuning-part-2-disable-gather-and-scatter.patch
+│   │   ├── 0002-Zen5-tuning-part-3-scheduler-tweaks.patch
+│   │   ├── 0003-Zen5-tuning-part-4-update-reassocation-width.patch
+│   │   ├── 0004-Zen5-tuning-part-5-update-instruction-latencies-in-x.patch
+│   │   ├── c89
+│   │   ├── c99
+│   │   ├── gcc-ada-repro.patch
+│   │   └── PKGBUILD
+│   ├── glibc
+│   │   ├── clearlinux.patch
+│   │   ├── evex.patch
+│   │   ├── glibc.install
+│   │   ├── lib32-glibc.conf
+│   │   ├── lib32-glibc.install
+│   │   ├── locale-gen
+│   │   ├── locale.gen.txt
+│   │   ├── PKGBUILD
+│   │   ├── sdt-config.h
+│   │   └── sdt.h
+│   ├── libpfm
+│   │   └── PKGBUILD
+│   ├── libtool
+│   │   ├── disable-lto-link-order2.patch
+│   │   └── PKGBUILD
+│   ├── linux-api-headers
+│   │   ├── ntsync.patch
+│   │   └── PKGBUILD
+│   ├── linux-tools
+│   │   ├── cpupower.default
+│   │   ├── cpupower.install
+│   │   ├── cpupower.service
+│   │   ├── cpupower.systemd
+│   │   ├── hv_kvp_daemon.service
+│   │   ├── hv_vss_daemon.service
+│   │   ├── PKGBUILD
+│   │   └── usbipd.service
+│   └── pahole
+│       ├── 0001-CMakeLists.txt-Install-ostra.py-into-Python3_SITELIB.patch
+│       ├── fix-kernel-lto.patch
+│       └── PKGBUILD
+├── vapormark-git
+│   └── PKGBUILD
+├── wine-cachyos
+│   ├── 30-win32-aliases.conf
+│   ├── PKGBUILD
+│   ├── wine-binfmt.conf
+│   └── wine.install
+├── wine-cachyos-opt
+│   ├── 30-win32-aliases.conf
+│   ├── PKGBUILD
+│   ├── wine-binfmt.conf
+│   └── wine.install
+├── xz
+│   ├── add-pgo.patch
+│   └── PKGBUILD
+├── zfs-meta
+│   └── PKGBUILD
+├── zlib-ng
+│   ├── lib32-zlib-ng
+│   │   └── PKGBUILD
+│   └── zlib-ng
+│       └── PKGBUILD
+├── zsh
+│   ├── 0001-50629-do-not-use-egrep-in-tests.patch
+│   ├── 0001-50641-use-int-main.patch
+│   ├── 0002-50325-fix-autocompletion.patch
+│   ├── 0003-51862-support-texinfo-7-0.patch
+│   ├── 0004-pcre2.patch
+│   ├── 0005-52383-avoid-incompatible-pointer-types.patch
+│   ├── PKGBUILD
+│   ├── zprofile
+│   └── zsh.install
+└── zstd
+    ├── lib32-zstd
+    │   └── PKGBUILD
+    ├── zstd
+    │   └── PKGBUILD
+    └── zstd-pgo
+        └── PKGBUILD
+
+174 directories, 479 files

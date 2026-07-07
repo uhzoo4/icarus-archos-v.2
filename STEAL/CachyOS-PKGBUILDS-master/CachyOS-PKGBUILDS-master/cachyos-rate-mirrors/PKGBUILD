@@ -1,0 +1,30 @@
+# Maintainer: Peter Jung <admin@ptr1337.dev>
+# Contributor: Michael Bolden Jnr SM9(); <me@sm9.dev>
+
+pkgname=cachyos-rate-mirrors
+pkgver=23
+pkgrel=3
+groups=(cachyos)
+arch=('any')
+install=$pkgname.install
+url="https://github.com/CachyOS"
+license=(GPL-1.0-only)
+pkgdesc='CachyOS - Rate mirrors service'
+depends=(rate-mirrors)
+source=(
+    cachyos-rate-mirrors
+    cachyos-rate-mirrors.service
+    cachyos-rate-mirrors.timer
+    cachyos-rate-mirrors.hook
+)
+sha256sums=('c8eefdede7b115ee7f4a59d6f631e491a0698c3a930c2fc2d2e9e710b4feaad2'
+            'a70233ee2e082e2e5a11503f048d06c80f566be4b7d664e4afee7051befc5420'
+            'e9f368a137bc20c54beea4ca349400e9a5903860cb830b5658a219546e5085f0'
+            '631cd984e0b77f58be2cee48748a49eab2c56d51622e397defbf464574aec0f4')
+
+package() {
+    install -Dm755 "$pkgname" "$pkgdir/usr/bin/$pkgname"
+    install -Dm644 "$pkgname.service" "$pkgdir/usr/lib/systemd/system/$pkgname.service"
+    install -Dm644 "$pkgname.timer" "$pkgdir/usr/lib/systemd/system/$pkgname.timer"
+    install -Dm644 "$pkgname.hook" "$pkgdir/usr/share/libalpm/hooks/$pkgname.hook"
+}

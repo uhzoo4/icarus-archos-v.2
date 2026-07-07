@@ -1,0 +1,26 @@
+pkgbase = scx-manager
+	pkgdesc = Simple GUI for managing sched-ext schedulers via scx_loader
+	pkgver = 1.15.11
+	pkgrel = 1
+	url = https://github.com/cachyos/scx-manager
+	arch = aarch64
+	arch = x86_64
+	groups = cachyos
+	license = GPL-3.0-or-later
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = git
+	makedepends = qt6-tools
+	makedepends = cargo
+	makedepends = lld
+	makedepends = clang
+	makedepends = llvm
+	depends = qt6-base
+	depends = polkit
+	depends = scx-scheds
+	depends = scx-tools
+	source = scx-manager::git+https://github.com/cachyos/scx-manager.git#tag=v1.15.11?signed
+	validpgpkeys = B1B70BB1CD56047DEF31DE2EB62C3D10C54D5DA9
+	sha256sums = b10320d2aad012cc8c5bbd79df5bed29d0390ead28c691c74da002fd1f8133b2
+
+pkgname = scx-manager

@@ -1,0 +1,434 @@
+#!/bin/bash
+
+# New script for using calamares.
+#
+# Note that this script can be called directly from the terminal,
+# or it can be called from the Welcome app.
+
+GUIDIE() {
+    # show error in the terminal and log
+    echo "$progname: $1" | sed -e 's|<tt>||g' -e 's|</tt>||g'  # remove some formatting tags
+
+    local prog=eos_yad
+    [ "$EOS_WICON" ] || prog=yad
+
+    # show the error in a yad window
+    local cmd=(
+        "$prog" --form --title="Error detected"
+        --text="<b>$progname:</b>\n$1\n"
+        --image=dialog-error
+        --button=yad-quit:1
+    )
+    "${cmd[@]}"
+
+    exit 1
+}
+
+### Provides the install log contents. ###
+FollowFile() {
+    local tailfile="$1"
+    local term_title="$2"
+    local xpos="$3"
+    local ypos="$4"
+
+    case "$CurrentDesktop" in
+        xfce) xfce4-terminal -T "$term_title" --geometry="120x20+$xpos+$ypos" -x tail -f "$tailfile" & ;;
+        kde) setsid konsole -e tail -f "$tailfile" &> /dev/null ;;
+    esac
+}
+
+### Provides the pacman log. ###
+CatchChrootedPacmanLog() {
+    local pacmanlog=""
+    local lockfile="$HOME/.$progname.lck"
+
+    # wait until pacman.log is available in the chrooted system, then follow the log in background
+    while true ; do
+        sleep 2
+        pacmanlog="$(/usr/bin/ls -1 /tmp/calamares-root-*/var/log/pacman.log 2>/dev/null | /usr/bin/tail -n 1)"
+        if [ -n "$pacmanlog" ] ; then
+            # pacman.log detected!
+            [ -r "$lockfile" ] && return
+            /usr/bin/touch "$lockfile"
+            FollowFile "$pacmanlog" "Pacman log" 400 50
+            break
+        fi
+    done
+}
+
+inxi_output() {
+    if [ -x /usr/bin/inxi ] ; then
+        local inxiout
+        inxiout="$(inxi -Czc0 ; inxi -Gnmzac0)"
+        cat <<EOF >> $log
+########## inxi:
+$inxiout
+EOF
+    fi
+}
+
+os-prober_output() {
+    if [ -x /usr/bin/os-prober ] ; then
+        local os_prober_out
+        os_prober_out="$(sudo os-prober)"
+        cat <<EOF >> "$log"
+########## os-prober:
+$os_prober_out
+EOF
+    fi
+}
+
+LogHeader() {
+    local calamares_version date
+    calamares_version="$(pacman -Q calamares 2>/dev/null | awk '{print $NF}')"
+    date=$(date -u "+%x %X")
+
+    cat <<EOF > $log
+########## $log by $progname
+########## Started (UTC): $date
+########## Install mode: $mode
+########## ISO version: $iso_version
+########## Calamares version: $calamares_version
+EOF
+    inxi_output
+    # os-prober_output
+}
+
+PreliminaryLogFile() {
+    local preprelogfile
+    preprelogfile="$(eos-select-file-server --logfilename)"
+    local output=""
+
+    if [ -r "$preprelogfile" ] ; then
+        output=$(cat "$preprelogfile")
+        cat <<EOF >> $log
+
+## >>> Preliminary log before starting calamares:
+$output
+EOF
+    fi
+
+    if [ -r "$prelogfile" ] ; then
+        output=$(cat "$prelogfile")
+        cat <<EOF >> $log
+$output
+## <<< End of preliminary log.
+
+EOF
+    fi
+    rm -f "$prelogfile"
+    rm -f "$preprelogfile"
+}
+
+### Starts logging into the install log. ###
+InstallLog_Start() {
+    LogHeader
+    PreliminaryLogFile
+
+    if [ "$ShowInstallLog" = "TRUE" ] ; then
+        FollowFile "$log" "Install log" 20 20
+    fi
+}
+
+### Starts calamares and runs it in the background. ###
+Calamares_Start() {
+    local kdesu=/usr/lib/kf6/kdesu
+    [ -x $kdesu ] || kdesu=kdesu
+
+    case "$CurrentDesktop" in
+        kde) $kdesu -t -c "calamares -D8" >> $log & ;;
+        *)   pkexec calamares -D8 >> $log & ;;
+    esac
+}
+
+### Dialog that asks for the online or offline edition. ###
+AskMode() {
+    local ret=0
+    local desktopname=""
+
+    case "$CurrentDesktop" in
+        xfce) desktopname="Xfce" ;;
+        kde)  desktopname="KDE" ;;
+    esac
+
+    local online_tip=""
+    local offline_tip
+    offline_tip="$(ltr cal_info2 $desktopname) $(ltr cal_info5)"
+
+    local cmd=(
+            eos_yad --form
+            --title="$(ltr cal_choose)"
+            --text="$(ltr cal_choose)"
+            --image="$ICO_CALAMARES"
+            --columns=2 --borders=10 --homogeneous
+            --height=180 --width=600 --scroll
+            --buttons-layout=spread
+    )
+    if [ $has_connection = yes ] ; then
+        online_tip="$(ltr cal_info3) $(ltr cal_info6)"
+        cmd+=(
+            --field="$online_tip":LBL ""
+            --field="$offline_tip":LBL ""
+            --button="Online!$ICO_CONNECTION!$online_tip":11
+            --button="Offline!$ICO_NO_CONNECTION!$offline_tip":13
+        )
+    else
+        # without connection only offline is possible
+        cmd+=(
+            --field="$offline_tip":LBL ""
+            --button="Offline!$ICO_NO_CONNECTION!$offline_tip":13
+        )
+    fi
+
+    local result
+    result="$("${cmd[@]}")"       # ask mode from the user
+
+    ret=$?
+
+    # set the install mode, or exit on error
+    case "$ret" in
+        11) mode=online ;;
+        13) mode=offline ;;
+        252|*) exit $ret ;;  # 252 = close using the "corner X"
+    esac
+    [ "$result" ] && result=""    # this line only for shellcheck!
+}
+
+PleaseWait() {
+    case "$1" in
+        start)
+            eos_yad --form --width=250 --title="$(ltr ins_start_calamares)" --text="$(ltr ins_please_wait)" --image="$ICO_CALAMARES" --no-buttons &
+            sleep 1
+            waitpid=$(ps -ef | grep -wv grep | grep "\--no-buttons" | awk '{print $2}')
+            ;;
+        stop)
+            while ! ps -C calamares ; do
+                sleep 1
+            done
+            sleep 1
+            sudo kill "$waitpid"
+            ;;
+    esac
+}
+
+### Starts the calamares installer process and logging. ###
+InstallWithLogs() {
+    InstallLog_Start
+    Calamares_Start
+
+    PleaseWait stop
+
+    if [ "$ShowPacmanLog" = "FALSE" ] ; then
+        sleep 5
+        return
+    fi
+
+    case "$mode" in
+        online | community)
+            CatchChrootedPacmanLog
+            ;;
+        offline)
+            # no pacman log for offline install
+            CatchChrootedPacmanLog
+            ;;
+    esac
+}
+
+hotfix_start_files() {
+    local -r file=${HOTFIX_START_FILE##*/}   # file=hotfix-start.bash
+    local -r url=$(eos-github2gitlab "$HOTFIX_START_FILE")
+
+    if [ -z "$url" ] ; then
+        PreLog "${FUNCNAME[0]}: fetching $file failed!"
+        return 1
+    fi
+
+    if Wget2Curl --timeout=30 -q -O "$workdir/$file" "$url" ; then
+        sudo bash "$workdir/$file" | tee -a  "$prelogfile" > /dev/null
+        PreLog "Hotfixes definition file from $url executed."
+        return 0
+    else
+        PreLog "${FUNCNAME[0]}: fetching $url failed!"
+        return 1
+    fi
+}
+
+DirHasFiles() { [ "$(/bin/ls "$1")" ]; }
+
+hotfix_start_pkg() {
+    local -r pkg=eos-iso-hotfix
+    if sudo pacman -Sy --noconfirm $pkg &>/dev/null ; then
+        # NEW system for hotfixes, uses files in package $pkg.
+        DirHasFiles /usr/share/endeavouros/hotfix/modules && sudo cp /usr/share/endeavouros/hotfix/modules/* /etc/calamares/modules/
+        DirHasFiles /usr/share/endeavouros/hotfix/scripts && sudo cp /usr/share/endeavouros/hotfix/scripts/* /etc/calamares/scripts/
+
+        sudo bash /usr/share/endeavouros/hotfix/hotfixes/hotfix-start.bash
+
+        # Note: calamares must copy some hotfix files (e.g. hotfix-end.bash) to folder /tmp of the chrooted target!
+
+        local version
+        version=$(expac %v $pkg)
+        PreLog "File hotfix-start.bash from package $pkg $version executed."
+        return 0
+    else
+        PreLog "${FUNCNAME[0]}: installing package $pkg failed."
+        return 1
+    fi
+}
+run_hotfix_start() { hotfix_start_files || hotfix_start_pkg; }
+
+BootloaderId() {
+    local blid
+    blid="endeavouros-$(shuf -i 1000-9999 -n1)"
+    PreLog "New bootloader id: '$blid'"
+    sudo sed -i "$cfolder"/modules/bootloader.conf -e "s|^efiBootloaderId:.*|efiBootloaderId: \"$blid\"|"
+}
+
+PreLog() {
+    # Some logs before we can use endeavour-install.log.
+    echo "==> $1" >> "$prelogfile"
+}
+
+CheckUserPkglist() {
+    local userlistfile="$Home/user_pkglist.txt"
+
+    if [ -r "$userlistfile" ] ; then
+        local up
+        local not_found=()
+        local aur=()
+        local txt=""
+        local user_pkgs=""
+
+        user_pkgs="$(cat "$userlistfile" | sed -E 's|([^#]*)#.*|\1|')"          # remove comments (line tail after #)
+
+        for up in $user_pkgs ; do
+            if ! pacman -Si "$up" >& /dev/null ; then
+                if yay -Sia "$up" >& /dev/null ; then
+                    aur+=("\t'$up'")
+                else
+                    not_found+=("\t'$up'")
+                fi
+            fi
+        done
+
+        if [ "${not_found[0]}" ] ; then
+            txt+="The following package names listed in <b>$userlistfile</b> do not exist:\n$(printf "<tt>%s</tt>\n" "${not_found[@]}")\n\n"
+        fi
+        if [ "${aur[0]}" ] ; then
+            txt+="AUR packages listed in <b>$userlistfile</b> are not supported:\n$(printf "<tt>%s</tt>\n" "${aur[@]}")\n\n"
+        fi
+        if [ "$txt" ] ; then
+            GUIDIE "$txt"
+        fi
+    fi
+}
+
+GetIsoVersion() {
+    local -r file=/usr/lib/endeavouros-release
+    [ -r $file ] && grep "^VERSION=" $file | sed -E 's|^VERSION=([0-9\.]+).*|\1|'
+}
+
+###  Everything starts in the Main function. ###
+Main() {
+    local progname="${0##*/}"           # for help and messages
+    local has_connection=no
+    local src_file
+    local src_files=(
+        /usr/share/endeavouros/scripts/eos-script-lib-yad
+        /etc/welcome-installer.conf
+    )
+    local waitpid=""
+    local testing=no
+
+    case "$1" in
+        --testing) testing=yes; shift ;;
+    esac
+
+    for src_file in "${src_files[@]}" ; do
+        source "$src_file" || GUIDIE "file <tt>$src_file</tt> not found?"
+    done
+    export -f eos_yad
+
+    [ -n "$HOTFIX_START_FILE" ] || GUIDIE "variable <tt>HOTFIX_START_FILE</tt> not set in <tt>/etc/welcome-installer.conf</tt>"
+
+    if [ $testing = no ] ; then
+        [ -x /usr/bin/calamares ] || GUIDIE "<tt>/usr/bin/calamares</tt> is needed for installing EndeavourOS"
+    fi
+
+    eos-connection-checker && has_connection=yes
+
+    local CurrentDesktop=""
+    GetCurrentDesktop CurrentDesktop          # in lowercase
+    AssignIconVariables_in_eos_bash_shared
+
+    source /usr/share/endeavouros/scripts/translations.bash || GUIDIE "file <tt>/usr/share/endeavouros/scripts/translations.bash</tt> not found?"
+    
+    local lang="$1"
+    local mode="$2"                             # 'community' or '' (empty)
+    local ShowInstallLog="FALSE"                # TRUE --> show install log terminal window
+    local ShowPacmanLog="FALSE"                 # TRUE --> show pacman  log terminal window
+    local Home=/home/liveuser                   # liveuser's home folder
+    [ $testing = yes ] && Home=/tmp/FOOBAR
+    local log=$Home/endeavour-install.log       # install log
+    local cfolder=/etc/calamares                # folder for calamares configuration files
+    local workdir=""
+    local prelogfile=""
+
+    CheckUserPkglist
+
+    workdir="$Home/work.$progname.xyz"
+    mkdir -p "$workdir"
+
+    prelogfile="$workdir/preliminary.log"
+    rm -f "$prelogfile"
+
+    # BootloaderId
+
+    _init_translations "$lang" || GUIDIE "language init failed"
+
+    case "$mode" in
+        "" | test) AskMode ;;    # ask the value for $mode
+    esac
+
+    PleaseWait start
+
+    if [ $has_connection = yes ] && [ "$mode" != "offline" ] ; then
+        [ $testing = no ] && run_hotfix_start                                    # run possible hotfixes before copying settings.conf file
+    fi
+
+    case "$mode" in
+        online | offline)
+            if [ $testing = no ] ; then
+                sudo cp "$cfolder/settings_$mode.conf" "$cfolder/settings.conf"      # copy the settings based on install mode
+                PreLog "File settings.conf updated."
+            fi
+
+            # User may have configs for calamares too.
+            # Note that there are two ways:
+            #  - the old (user_commands.bash)
+            #  - the new (user-commands-before.bash)
+            # and they have slightly different parameters.
+
+            local cmd2=""
+            local -r iso_version="$(GetIsoVersion)"
+            case $iso_version in
+                "" | 202[1-3]*) GUIDIE "ISO version '$iso_version' not supported!" ;;
+                2024.01.*)      cmd2="$Home/user_commands.bash --iso-config $mode" ;;      # galileo neo
+                *)              cmd2="$Home/user-commands-before.bash $mode" ;;            # gemini or later
+            esac
+
+            if [ $testing = no ] ; then
+                PreLog "Running user defined commands: $cmd2"
+                sudo bash "$cmd2"
+            fi
+            ;;
+        *)
+            GUIDIE "unsupported mode '$mode'"
+            ;;
+    esac
+
+    # finally: run calamares with logs (install, pacman)
+    [ $testing = no ] && InstallWithLogs
+}
+
+Main "$@"

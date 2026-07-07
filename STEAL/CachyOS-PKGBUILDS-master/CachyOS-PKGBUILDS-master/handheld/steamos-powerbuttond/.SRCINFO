@@ -1,0 +1,18 @@
+pkgbase = steamos-powerbuttond
+	pkgdesc = Power button daemon
+	pkgver = 4.2
+	pkgrel = 1
+	url = https://gitlab.steamos.cloud/jupiter/powerbuttond
+	arch = x86_64
+	license = BSD-2-Clause
+	makedepends = git
+	depends = glibc
+	depends = libevdev
+	depends = systemd-libs
+	provides = powerbuttond
+	conflicts = powerbuttond
+	replaces = powerbuttond
+	source = git+https://gitlab.steamos.cloud/holo/powerbuttond.git#tag=v4.2
+	sha512sums = 95bd9ce60bfa8525558af47733cc9d4496477f3fe543629728dc1264a0da29b1577cc84dbd3182ddef436b20994d5a814ef80e05694fb96f9b94e7bd970471a7
+
+pkgname = steamos-powerbuttond
