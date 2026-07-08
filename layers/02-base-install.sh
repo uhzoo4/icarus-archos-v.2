@@ -33,6 +33,11 @@ FREE_GB=$(( FREE_KB / 1024 / 1024 ))
 log "Refreshing host keyring to avoid signature failures on a rolling release live ISO..."
 timedatectl set-ntp true || log "WARNING: could not enable NTP sync (no network yet?). Continuing."
 
+log "Disabling IPv6 to prevent VirtualBox NAT blackhole freezes..."
+sysctl -w net.ipv6.conf.all.disable_ipv6=1
+sysctl -w net.ipv6.conf.default.disable_ipv6=1
+sysctl -w net.ipv6.conf.lo.disable_ipv6=1
+
 log "Optimizing pacman for reliable downloads..."
 # Enable parallel downloads
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
