@@ -34,8 +34,14 @@ log "Refreshing host keyring to avoid signature failures on a rolling release li
 timedatectl set-ntp true || log "WARNING: could not enable NTP sync (no network yet?). Continuing."
 
 log "Optimizing pacman for reliable downloads..."
-# Enable parallel downloads to avoid getting stuck on a single bad mirror
+# Enable parallel downloads
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
+
+# Force rock-solid global CDN mirrors to prevent hanging on bad servers
+cat > /etc/pacman.d/mirrorlist << 'EOF'
+Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
+EOF
 
 pacman-key --init
 pacman-key --populate archlinux
