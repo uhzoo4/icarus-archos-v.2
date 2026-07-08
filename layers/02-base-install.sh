@@ -34,7 +34,7 @@ log "Refreshing host keyring to avoid signature failures on a rolling release li
 timedatectl set-ntp true || log "WARNING: could not enable NTP sync (no network yet?). Continuing."
 
 log "Updating and ranking pacman mirrors..."
-pacman -S --noconfirm reflector
+pacman -Sy --noconfirm reflector
 reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist || log "WARNING: reflector failed to update mirrors."
 
 pacman-key --init
