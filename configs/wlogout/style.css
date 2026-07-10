@@ -56,10 +56,6 @@ button:hover {
     background-image: url("icons/suspend.svg");
 }
 
-#hibernate {
-    background-image: url("icons/hibernate.svg");
-}
-
 #reboot {
     background-image: url("icons/reboot.svg");
 }

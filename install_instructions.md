@@ -1,6 +1,6 @@
 # Icarus-ArchOS Installation & VM Testing Guide
 
-This guide contains step-by-step instructions to transfer your workspace changes, prepare your environment, boot an Arch Linux Live ISO in a Virtual Machine, and run the automated installer.
+This guide contains step-by-step instructions to transfer your workspace changes, prepare your environment, boot a **CachyOS** (or vanilla Arch Linux) Live ISO in a Virtual Machine, and run the automated installer. The assembler auto-detects which ISO you're running and adapts keyrings, mirrors, and repos accordingly.
 
 ---
 
@@ -16,12 +16,12 @@ git commit -m "feat: complete Products merge, wallpaper sync, and silent-boot re
 
 ---
 
-## Step 2: Boot Arch Linux Live ISO inside your VM
+## Step 2: Boot CachyOS (or Arch Linux) Live ISO inside your VM
 
-1. Download the latest Arch Linux ISO.
+1. Download the latest **CachyOS Online Installer ISO** from [cachyos.org](https://cachyos.org/download/) (or the latest vanilla Arch Linux ISO from [archlinux.org](https://archlinux.org/download/)).
 2. Create a virtual machine with at least **30 GB of disk space** (the installer requires $\ge$ 29 GB).
 3. Ensure the VM has active internet access (NAT or Bridged adapter).
-4. Boot the VM into the Arch Linux Live ISO command line.
+4. Boot the VM into the Live ISO command line.
 
 ---
 

@@ -6,12 +6,14 @@
  * `-theme icarus-spotlight` invocations resolve correctly.
  */
 
+@import "~/.config/icarus/theme/colors.rasi"
+
 * {
     bg:          rgba(10, 10, 10, 0.88);
     bg-alt:      rgba(154, 160, 166, 0.08);   /* titanium, very faint */
-    fg:          #C7CACD;                     /* silver */
+    fg:          @text-primary;
     fg-dim:      rgba(199, 202, 205, 0.5);
-    accent:      #4A6D8C;                     /* steel blue */
+    accent-sel:  @accent;
     border-col:  rgba(154, 160, 166, 0.16);
 
     background-color: transparent;
@@ -78,7 +80,7 @@ element selected {
     background-color: @bg-alt;
     text-color: @fg;
     border: 0 0 0 2px;
-    border-color: @accent;
+    border-color: @accent-sel;
 }
 
 element-text {

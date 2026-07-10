@@ -27,7 +27,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "$PREV_SENTINEL" ]] || fatal "Layer 2 sentinel not found (${PREV_SENTINEL})."
-[[ -f /etc/arch-release ]] || fatal "This does not look like an Arch chroot. Refusing to run."
+[[ -f /etc/arch-release || -f /etc/cachyos-release || grep -qi "ID_LIKE=arch" /etc/os-release 2>/dev/null ]] || fatal "This does not look like an Arch-based chroot. Refusing to run."
 
 # ---------------------------------------------------------------------------
 # Localization & identity

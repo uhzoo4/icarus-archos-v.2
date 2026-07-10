@@ -42,15 +42,38 @@ log "Optimizing pacman for reliable downloads..."
 # Enable parallel downloads
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /etc/pacman.conf
 
-# Force rock-solid global CDN mirrors to prevent hanging on bad servers
-cat > /etc/pacman.d/mirrorlist << 'EOF'
+# ---------------------------------------------------------------------------
+# Detect whether we're running from a CachyOS live ISO or a vanilla Arch
+# ISO — they ship different keyrings, repos, and package names. Rather
+# than forcing vanilla Arch mirrors onto a CachyOS ISO (which would lose
+# access to CachyOS-optimized packages and potentially break keyring
+# trust), we detect and adapt.
+# ---------------------------------------------------------------------------
+IS_CACHYOS=0
+if grep -qi "cachyos" /etc/os-release 2>/dev/null \
+   || pacman -Qi cachyos-keyring &>/dev/null; then
+    IS_CACHYOS=1
+    log "Detected CachyOS live ISO — using CachyOS repos and keyring."
+else
+    log "Detected vanilla Arch live ISO — using upstream Arch mirrors."
+fi
+
+if [[ $IS_CACHYOS -eq 1 ]]; then
+    # CachyOS already has its mirrors and keyring configured in the live ISO.
+    # Just refresh and make sure the keyring is current.
+    pacman-key --init
+    pacman-key --populate archlinux cachyos
+    pacman -Sy --noconfirm cachyos-keyring cachyos-mirrorlist || log "WARNING: could not refresh CachyOS keyring — continuing with what the live ISO shipped."
+else
+    # Force rock-solid global CDN mirrors for vanilla Arch
+    cat > /etc/pacman.d/mirrorlist << 'EOF'
 Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
 Server = https://mirrors.kernel.org/archlinux/$repo/os/$arch
 EOF
-
-pacman-key --init
-pacman-key --populate archlinux
-pacman -Sy --noconfirm archlinux-keyring
+    pacman-key --init
+    pacman-key --populate archlinux
+    pacman -Sy --noconfirm archlinux-keyring
+fi
 
 log "Running pacstrap..."
 pacstrap -K /mnt \

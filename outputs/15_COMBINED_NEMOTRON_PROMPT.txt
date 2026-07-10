@@ -1,0 +1,967 @@
+I previously worked with you across several separate design sessions for a
+solo-maintained, immutable Arch Linux-based OS. Two of those documents
+depend on the same underlying design decision, and that decision turns out
+to be wrong. I need you to revise BOTH documents together, in one pass, so
+they stay consistent with each other — not just patch one and leave the
+other contradicting it.
+
+I am pasting, in order:
+1. OLD DOCUMENT 1 — your previous partition/rollback design (needs fixing)
+2. OLD DOCUMENT 2 — your previous recovery-environment design, which was
+   built on top of Document 1 and inherited its mistake (also needs fixing)
+3. VERIFIED SOURCE FACTS — literal excerpts pulled directly from the real
+   arkdep and mkosi source code (not from memory/training data), which
+   contradict specific claims in both documents above
+4. Your task, spelled out at the end
+
+Treat section 3 as ground truth that OVERRIDES anything you would
+otherwise recall about how arkdep, mkosi, or similar tools (rpm-ostree,
+OSTree, SteamOS's Btrfs A/B scheme) typically work. Do not average the
+provided behavior with generic pattern-matched knowledge from training
+data. Where you need to infer something not shown in the excerpts, say so
+explicitly ("not confirmed by the provided excerpt, inferring based on—")
+rather than presenting an inference as verified fact.
+
+================================================================================
+OLD DOCUMENT 1 — Partition & Rollback Design (TO BE REVISED)
+================================================================================
+
+================================================================================
+A/B PARTITION & ROLLBACK ARCHITECTURE
+================================================================================
+
+--------------------------------------------------------------------------------
+(a) STATE DIAGRAM — BOOT SLOT LIFECYCLE
+--------------------------------------------------------------------------------
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           BOOT SLOT STATE MACHINE                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+    │   SLOT A     │         │   SLOT B     │         │  RECOVERY    │
+    │  (ACTIVE)    │         │  (STANDBY)   │         │  (FALLBACK)  │
+    └──────┬───────┘         └──────┬───────┘         └──────┬───────┘
+           │                        │                        │
+           │  bootcount=0           │  bootcount=0           │  bootcount=0
+           │  (healthy)             │  (untested)            │  (manual only)
+           ▼                        ▼                        ▼
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                        BOOT ATTEMPT (systemd-boot)                   │
+    │  1. Read loader.conf: bootcount=yes, bootcount-limit=3              │
+    │  2. Select entry per 'default' / 'next' / menu selection            │
+    │  3. Increment EFI var: LoaderEntrySelected-<machine-id>-<entry-id>  │
+    │  4. Launch UKI (kernel + initrd + cmdline)                          │
+    └────────────────────────────┬─────────────────────────────────────────┘
+                                 │
+                    ┌────────────┴────────────┐
+                    ▼                         ▼
+           ┌───────────────┐           ┌───────────────┐
+           │  BOOT SUCCESS │           │  BOOT FAILURE │
+           │  (reaches     │           │  (kernel panic,│
+           │   graphical   │           │   emergency   │
+           │   target)     │           │   shell,      │
+           └───────┬───────┘           │   watchdog)   │
+                   │                   └───────┬───────┘
+                   │                           │
+                   ▼                           ▼
+    ┌─────────────────────────┐    ┌─────────────────────────┐
+    │ systemd-boot-success    │    │ Counter increments      │
+    │ .service runs           │    │ (persisted in EFI var)  │
+    │ → resets counter to 0   │    │                         │
+    │ → marks slot HEALTHY    │    │ If counter < 3:         │
+    │ → clears 'next' entry   │    │   → reboot, retry SAME  │
+    └───────────┬─────────────┘    │   → user sees menu      │
+                │                  │ If counter == 3:        │
+                │                  │   → entry marked BAD    │
+                │                  │   → systemd-boot skips  │
+                │                  │   → tries NEXT entry    │
+                │                  └───────────┬─────────────┘
+                │                              │
+                │                              ▼
+                │                     ┌─────────────────────────┐
+                │                     │ FALLBACK TO OTHER SLOT  │
+                │                     │ (automatic on 3rd fail) │
+                │                     │                         │
+                │                     │ Slot B becomes ACTIVE   │
+                │                     │ Slot A marked STALE     │
+                │                     │ bootcount reset to 0    │
+                │                     └───────────┬─────────────┘
+                │                                 │
+                └─────────────────────────────────┘
+                                  │
+                                  ▼
+                    ┌─────────────────────────┐
+                    │   STEADY STATE          │
+                    │   One slot ACTIVE       │
+                    │   One slot STANDBY      │
+                    │   (or RECOVERY if both  │
+                    │    exhausted)           │
+                    └─────────────────────────┘
+
+
+UPDATE TRANSITION (initiated from RUNNING OS):
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  CURRENT STATE: Slot A = ACTIVE (bootcount=0), Slot B = STANDBY            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  1. CI builds new UKI → writes to /efi/EFI/Linux/arch-<ver>-B.efi          │
+│     (targets INACTIVE slot B partition)                                     │
+│  2. Update loader entry for Slot B:                                         │
+│     - linux /EFI/Linux/arch-<ver>-B.efi                                     │
+│     - options root=LABEL=arch_root_b ...                                    │
+│  3. Set 'next' boot to Slot B entry (efibootmgr --bootnext)                │
+│  4. Reboot                                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  BOOT SEQUENCE ON SLOT B (first attempt, bootcount=1):                     │
+│  - If SUCCESS (reaches graphical.target):                                   │
+│      → systemd-boot-success resets counter                                  │
+│      → Slot B promoted to ACTIVE                                            │
+│      → Slot A becomes STANDBY                                               │
+│      → CI promotes build to stable repo                                     │
+│  - If FAILURE (3 consecutive):                                              │
+│      → Slot B marked BAD                                                    │
+│      → Falls back to Slot A (still ACTIVE)                                  │
+│      → CI marks build FAILED, no promotion                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+MANUAL ROLLBACK (from BOOT MENU, no OS required):
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  User at systemd-boot menu (10s timeout):                                   │
+│  1. Select "Autonomous Arch OS (Slot A)" or "Slot B"                       │
+│  2. Boot proceeds on SELECTED slot                                          │
+│  3. If that slot boots → becomes ACTIVE                                     │
+│  4. If that slot fails 3× → falls back to other slot                        │
+│  5. Recovery entry always available as last resort                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+--------------------------------------------------------------------------------
+(b) SYSTEMD-BOOT BOOT COUNTING CONFIGURATION
+--------------------------------------------------------------------------------
+
+**Systemd Version**: Boot counting introduced in **systemd 250** (released 2023-03-07).  
+**Mechanism**: Native EFI variable counters per boot entry — **not** a userspace watchdog.
+
+### 1. `/efi/loader/loader.conf` (Global)
+
+```ini
+# /efi/loader/loader.conf
+# SPDX-License-Identifier: MIT
+
+# Enable boot attempt counting per entry
+bootcount=yes
+
+# Maximum consecutive failures before entry is skipped (default: 3)
+# JUSTIFICATION FOR 3:
+# - 1: Too fragile — transient hardware glitch (cosmic ray, thermal throttle)
+#      or first-boot service race would trigger fallback unnecessarily
+# - 2: Better, but still vulnerable to correlated transient failures
+# - 3: Industry standard (Chrome OS, Fedora Silverblue, SteamOS all use 3)
+#      Balances "fail fast" vs "don't flip on fluke"
+# - >3: Delays recovery, user sees broken boot longer
+bootcount-limit=3
+
+# Show menu for 10s — allows manual rollback selection
+timeout=10
+
+# No default entry — use 'saved' behavior via efibootmgr --bootnext
+# On first boot, systemd-boot picks first entry alphabetically
+default=
+
+# Console mode for consistent rendering
+console-mode=keep
+
+# Editor=1 allows 'e' to edit kernel cmdline at boot (recovery aid)
+editor=yes
+
+# Auto-firmware=1 enables fwupd UEFI capsule updates via boot menu
+auto-firmware=yes
+```
+
+### 2. Boot Entries — `/efi/loader/entries/arch-<slot>.conf`
+
+**Slot A Entry** (`arch-a.conf`):
+```ini
+# /efi/loader/entries/arch-a.conf
+title   Autonomous Arch OS (Slot A)
+version <IMAGE_VERSION_A>
+linux   /EFI/Linux/arch-<IMAGE_VERSION_A>.efi
+options root=LABEL=arch_root_a rootflags=subvol=@ rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0
+# Unique ID for boot counting — MUST be stable across rebuilds
+# Format: <distro>-<slot>-<static-uuid>
+# Generate once at install: uuidgen → store in /etc/machine-id-arch-a
+id      arch-a-<STATIC_UUID_A>
+```
+
+**Slot B Entry** (`arch-b.conf`):
+```ini
+# /efi/loader/entries/arch-b.conf
+title   Autonomous Arch OS (Slot B)
+version <IMAGE_VERSION_B>
+linux   /EFI/Linux/arch-<IMAGE_VERSION_B>.efi
+options root=LABEL=arch_root_b rootflags=subvol=@ rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0
+id      arch-b-<STATIC_UUID_B>
+```
+
+**Recovery Entry** (`arch-recovery.conf`):
+```ini
+# /efi/loader/entries/arch-recovery.conf
+title   Autonomous Arch OS (Recovery)
+version recovery
+linux   /EFI/Linux/arch-recovery.efi
+options root=LABEL=arch_root_a rootflags=subvol=@ rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0 systemd.unit=emergency.target
+id      arch-recovery-<STATIC_UUID_RECOVERY>
+```
+
+> **Critical**: The `id` field **must be stable** across image rebuilds.  
+> If `id` changes, boot counting resets (new EFI variable).  
+> Generate once at install time, store in `/etc/machine-id-arch-{a,b,recovery}`, bake into UKI via `mkosi.extra/etc/machine-id-arch-*`.
+
+### 3. Boot Success Service — `/usr/lib/systemd/system/systemd-boot-success.service`
+
+```ini
+# /usr/lib/systemd/system/systemd-boot-success.service
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# Part of systemd 250+ — resets boot counter on successful boot
+
+[Unit]
+Description=Mark boot as successful for systemd-boot
+Documentation=man:systemd-boot(7)
+DefaultDependencies=no
+After=local-fs.target
+Before=sysinit.target
+ConditionPathExists=/sys/firmware/efi
+ConditionKernelCommandLine=|bootcount
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/systemd/systemd-boot-success
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target
+```
+
+> **Provided by systemd 250+** — no custom script needed.  
+> Triggers when `bootcount` kernel parameter is present (added by systemd-boot when `bootcount=yes`).  
+> Resets the EFI variable counter for the current entry to 0.
+
+### 4. Update Flow — Setting `next` Boot (from Running OS)
+
+```bash
+# scripts/promote_to_stable.sh (runs on ACTIVE slot after validation)
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Determine INACTIVE slot
+CURRENT_ROOT=$(findmnt -no SOURCE / | sed 's/\[.*//')
+if [[ "$CURRENT_ROOT" == *root_a* ]]; then
+    NEXT_SLOT="arch-b-<STATIC_UUID_B>"
+    NEXT_LABEL="arch_root_b"
+else
+    NEXT_SLOT="arch-a-<STATIC_UUID_A>"
+    NEXT_LABEL="arch_root_a"
+fi
+
+# Set next boot to INACTIVE slot (one-shot)
+efibootmgr --bootnext "$(efibootmgr | grep "$NEXT_SLOT" | sed 's/^Boot\([0-9]*\).*/\1/')"
+
+# Optional: set default to inactive slot for subsequent boots
+# efibootmgr --bootorder "$(efibootmgr | grep "$NEXT_SLOT" | sed 's/^Boot\([0-9]*\).*/\1/'),..."
+
+# Reboot to test new slot
+systemctl reboot
+```
+
+### 5. Partition Layout — `partitions/layout.sfdisk`
+
+```sfdisk
+label: gpt
+unit: sectors
+
+# 1. ESP — 1 GiB (shared, holds ALL UKIs + loader entries)
+/dev/disk/by-partlabel/esp : start=2048, size=2097152, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, name="esp"
+
+# 2. Root A — 50 GiB (Btrfs, labeled arch_root_a)
+/dev/disk/by-partlabel/root_a : size=104857600, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="root_a"
+
+# 3. Root B — 50 GiB (Btrfs, labeled arch_root_b)
+/dev/disk/by-partlabel/root_b : size=104857600, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="root_b"
+
+# 4. Var — remaining (Btrfs, shared, labeled arch_var)
+/dev/disk/by-partlabel/var : type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="var"
+
+# 5. Home — optional separate, or subvolume under var
+# /dev/disk/by-partlabel/home : type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="home"
+```
+
+**Btrfs Subvolumes** (created at install, persist across swaps):
+```
+@_a          ← rootfs for Slot A (read-only when active)
+@_b          ← rootfs for Slot B (read-only when active)
+@var         ← /var (persistent, shared)
+  ├─ overlay/etc/upper   ← OverlayFS upper for /etc
+  ├─ overlay/etc/work    ← OverlayFS work dir
+  ├─ lib/flatpak         ← System Flatpaks
+  ├─ lib/NetworkManager  ← Network state
+  └─ ...
+@home        ← /home (persistent, user data only)
+@snapshots   ← Optional: timeshift/btrfs snapshots
+```
+
+**Kernel Command Line** (baked into each UKI):
+```
+# Slot A UKI
+root=LABEL=arch_root_a rootflags=subvol=@_a rw quiet ...
+
+# Slot B UKI
+root=LABEL=arch_root_b rootflags=subvol=@_b rw quiet ...
+```
+
+--------------------------------------------------------------------------------
+(c) GUARANTEES & NON-GUARANTEES — PLAIN LANGUAGE
+--------------------------------------------------------------------------------
+
+### ✅ WHAT THIS DESIGN PROTECTS AGAINST
+
+| Threat | Protection Mechanism |
+|--------|---------------------|
+| **Bad OS update breaks boot** | New image written to **inactive** slot only. Active slot untouched. If new slot fails 3×, systemd-boot **automatically falls back** to known-good slot. |
+| **Kernel panic / initrd failure / driver regression** | Boot counting catches any failure before `graphical.target`. 3 strikes → fallback. |
+| **User forced to fix via live USB** | **Manual rollback from boot menu** — press arrow keys at 10s timeout, select other slot. Works even if active slot doesn't reach login. |
+| **Bitrot / silent corruption on inactive slot** | Inactive slot verified on **next boot attempt** (not at write time). Corruption detected before it becomes active. |
+| **Bootloader config corruption** | `loader.conf` and entries on **shared ESP** — single source of truth. Both slots reference same ESP. |
+| **Power loss during update** | Update writes to **inactive** partition only. Active partition never modified mid-write. |
+| **Firmware/UEFI variable loss** | Boot counting uses EFI vars, but fallback logic is in **systemd-boot binary** — if vars lost, counters reset to 0 (safe default). |
+
+### ❌ WHAT THIS DESIGN DOES **NOT** PROTECT AGAINST
+
+| Threat | Why Not Protected | Mitigation (Out of Scope) |
+|--------|-------------------|---------------------------|
+| **Silent data corruption in `/home`** | `/home` is **shared** (single `@home` subvolume). Both slots mount same `/home`. A bug that corrupts user files affects both slots. | **User responsibility**: Backups (borg, restic, timeshift on `@home`), RAID/ZFS on separate disk, cloud sync. |
+| **Silent data corruption in `/var`** | `/var` is **shared** (`@var` subvolume). Flatpak data, NetworkManager state, logs, caches — all shared. | Same as above. Critical state (SSH keys, machine-id) migrated via `migrate-config.sh` but not versioned. |
+| **Malicious/buggy config in `/etc` that survives rollback** | `/etc` uses **OverlayFS** (lower=image, upper=`/var/overlay/etc`). Upper dir persists across swaps. A bad config written to upper dir **survives rollback**. | `migrate-config.sh` only copies **missing** files. Does not overwrite. Admin must manually clean `/var/overlay/etc/upper`. |
+| **Hardware failure (disk death, RAM, CPU)** | Single disk = single point of failure. A/B partitions on same device. | **Out of scope**: Use separate physical disks, RAID, or cloud backup. |
+| **Firmware/BIOS boot order corruption** | systemd-boot entries stored in ESP. If UEFI vars wiped, boot order lost but entries remain. | `efibootmgr` backup/restore, or UEFI shell `bcfg` dump. |
+| **Evil maid / physical attacker** | No full-disk encryption in this design (LUKS optional but not mandated). | Add LUKS2 + TPM2 + PCR binding (future work). |
+| **Kernel exploit persisting in memory** | Reboot clears RAM. But if exploit writes to `/var` or `/home`, persists. | Immutable `/usr` + signed UKI + Secure Boot raises bar. |
+| **Supply chain compromise (upstream Arch package)** | Packages pulled from Arch Linux Archive at build time. No runtime verification beyond sbctl. | Reproducible builds, sigstore/cosign on custom packages (future work). |
+| **Boot counting false positive (3 transient fails)** | Cosmic ray, thermal throttle, marginal RAM could cause 3 fails → fallback to **also-broken** slot if both have same bug. | Probability extremely low. Hardware health monitoring (smartd, mcelog) recommended. |
+
+### ⚠️ KEY ASSUMPTIONS & TRADE-OFFS
+
+1. **`bootcount-limit=3` is a heuristic** — not mathematically derived.  
+   - Chrome OS: 3  
+   - Fedora Silverblue: 3 (via `grub2-set-bootflag boot_success=0` + `boot_indeterminate=3`)  
+   - SteamOS: 3 (custom `steamos-bootcount`)  
+   - **Rationale**: Transient failures are usually single-event. Correlated triple-failure implies systemic bug.
+
+2. **Shared `/var` and `/home` are intentional** — enables Flatpak, user data, network state persistence.  
+   - Cost: Config drift in `/etc` upper dir, no per-slot `/var` snapshots.  
+   - Alternative (per-slot `/var`): Doubles disk usage, breaks Flatpak deduplication, complicates migration.
+
+3. **No automatic "promote after 1 success"** — CI must explicitly promote.  
+   - Prevents "flaky pass" becoming permanent.  
+   - Human gate (`manual-release.yml`) is the final arbiter.
+
+4. **Recovery entry is minimal** — busybox + btrfs + cryptsetup + curl + `reflashing.sh`.  
+   - Does NOT include desktop, browser, or GUI tools.  
+   - Purpose: Pull last-known-good UKI from GitHub Releases / repo-hosting, write to broken slot, reboot.
+
+5. **Secure Boot keys self-signed + MOK enrollment** — not Microsoft-signed shim.  
+   - User must run `mokutil --import MOK.crt` once.  
+   - If MOK not enrolled, UKI signature verification fails → boot fails → counts toward limit.
+
+--------------------------------------------------------------------------------
+IMPLEMENTATION CHECKLIST (FROM STATE DIAGRAM)
+--------------------------------------------------------------------------------
+
+| Component | File / Location | Status |
+|-----------|-----------------|--------|
+| `loader.conf` with bootcount | `/efi/loader/loader.conf` (via `mkosi.extra`) | ☐ |
+| Slot A entry (stable `id`) | `/efi/loader/entries/arch-a.conf` | ☐ |
+| Slot B entry (stable `id`) | `/efi/loader/entries/arch-b.conf` | ☐ |
+| Recovery entry | `/efi/loader/entries/arch-recovery.conf` | ☐ |
+| `systemd-boot-success.service` | Provided by systemd 250+ | ✅ |
+| Stable `id` generation at install | `scripts/install.sh` → `/etc/machine-id-arch-*` | ☐ |
+| UKI build includes `id` in cmdline | `image/mkosi.conf` → `KernelCommandLine` | ☐ |
+| Update script sets `--bootnext` | `scripts/promote_to_stable.sh` | ☐ |
+| Partition labels match cmdline | `partitions/layout.sfdisk` → `arch_root_a/b` | ☐ |
+| Btrfs subvolumes `@_a`, `@_b` | `scripts/build_image.sh` + `mkosi.postinst` | ☐ |
+| OverlayFS `/etc` upper in `@var` | `image/mkosi.extra/etc/fstab.overlay` | ☐ |
+| `migrate-config.sh` for `/etc` drift | `repository/packages/system-hooks/` | ☐ |
+| Recovery UKI build | `recovery/recovery-rootfs/` | ☐ |
+| `reflashing.sh` pulls from stable | `recovery/reflashing.sh` | ☐ |
+
+--------------------------------------------------------------------------------
+END OF ARCHITECTURE
+================================================================================
+================================================================================
+OLD DOCUMENT 2 — Recovery Environment Design (TO BE REVISED — inherits
+Document 1's mistake: it detects "inactive slot" via root_a/root_b string
+matching and shows a Slot A / Slot B boot menu, both of which assume the
+wrong partition model from Document 1)
+================================================================================
+
+# RECOVERY ENVIRONMENT DESIGN DOCUMENT
+## Autonomous Arch OS — Minimal Rescue Runtime
+
+---
+
+## 1. PHYSICAL PLACEMENT: DEDICATED RECOVERY PARTITION
+
+### Decision: **Yes, a small dedicated partition baked at install time.**
+
+### Justification
+
+| Alternative | Why Rejected |
+|-------------|--------------|
+| **USB stick required** | User in crisis may not have one; adds friction to recovery; defeats "self-contained" promise |
+| **Second ESP partition** | ESP is for bootloaders only; firmware may not boot arbitrary UKIs from non-standard ESPs; 1 GiB ESP already allocated |
+| **Hidden in `@var` subvolume** | Requires mounting Btrfs first — chicken/egg if root is corrupted; recovery must work when *nothing* mounts |
+| **Embedded in firmware (UEFI capsule)** | Not portable across hardware; requires vendor tooling; no standard for "recovery UKI" |
+
+### Partition Specification
+
+```sfdisk
+# partitions/layout.sfdisk — ADDITION to existing layout
+label: gpt
+unit: sectors
+
+# ... existing entries (esp, root_a, root_b, var, home) ...
+
+# 5. Recovery — 512 MiB (fixed, never resized)
+/dev/disk/by-partlabel/recovery : size=1048576, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="recovery"
+```
+
+**Filesystem**: **ext4** (not Btrfs) — simpler, no subvolume complexity, readable by any Linux kernel 3.0+, GRUB, systemd-boot, Windows WSL, macOS fuse-ext2.
+
+**Label**: `arch_recovery` (for `root=LABEL=arch_recovery`)
+
+**Mount point in recovery UKI**: `/` (the recovery rootfs *is* this partition)
+
+**Size rationale**: 512 MiB fits:
+- Kernel + initrd (UKI) ~25 MB
+- BusyBox + essential binaries ~15 MB
+- `btrfs-progs`, `cryptsetup`, `curl`, `ca-certificates` ~40 MB
+- Network firmware blobs (if needed) ~20 MB
+- **Headroom**: ~400 MB for future driver updates, logs, temporary downloads
+
+---
+
+## 2. MINIMUM CAPABILITIES (AND ONLY THESE)
+
+### 2.1 Core Functions
+
+| Function | Implementation |
+|----------|----------------|
+| **Re-flash stable image** | `reflash.sh` — downloads latest `arch-<version>.efi` + `.sig` from `https://repo.your-domain.org/custom-stable/`, verifies GPG, writes to inactive slot via `btrfs receive` or `dd`, updates loader entry |
+| **Mount & inspect `/home`** | Auto-detects `@home` subvolume on `LABEL=arch_var`, mounts read-only at `/mnt/home`, drops to shell with `HOME=/mnt/home/<user>` hint |
+| **Basic shell** | BusyBox `ash` + `bash` (static) — `ls`, `cp`, `mv`, `cat`, `grep`, `find`, `mount`, `umount`, `btrfs`, `cryptsetup`, `curl`, `gpg`, `efibootmgr`, `sbctl` |
+
+### 2.2 Explicit Non-Goals (What It Does NOT Do)
+
+| Excluded | Reason |
+|----------|--------|
+| **Custom desktop environment** | Recovery is CLI-only; GUI adds 200+ MB, driver dependencies, attack surface |
+| **Automated healing / AI triage** | That logic lives in the *primary* OS; recovery must work when primary is gone |
+| **Package installation (`pacman`)** | No package database, no repo access without network + keys; use `curl` + static binaries |
+| **Full systemd** | `systemd` in initrd is heavy; BusyBox `init` + `systemd` only for `systemd-boot` interaction if needed |
+| **NetworkManager** | `systemd-networkd` + `wpa_supplicant` (static) or `dhcpcd` — simpler, fewer deps |
+| **Flatpak / Distrobox** | Irrelevant for recovery; user data is in `/home`, not containers |
+| **Telemetry / crash reporting** | No outbound calls except explicit `reflash.sh` download |
+| **Secure Boot enrollment** | MOK enrollment requires reboot into firmware UI; recovery assumes MOK already enrolled |
+
+### 2.3 Package List (Target: < 100 MB installed)
+
+```
+Base:
+  busybox (static, provides ash, ls, cp, mv, cat, grep, find, mount, umount, dd, tar, gzip, wget)
+  bash (static) — for reflash.sh script compatibility
+  linux (kernel only, no firmware — see below)
+  linux-firmware (MINIMAL: only wifi/ethernet needed for target hardware)
+
+Crypto/FS:
+  cryptsetup (static, LUKS2)
+  btrfs-progs (static, btrfs receive/send, subvolume list, mount)
+  e2fsprogs (ext4 for recovery partition itself)
+
+Network:
+  curl (with TLS, static linked if possible)
+  ca-certificates
+  dhcpcd (or systemd-networkd minimal)
+  wpa_supplicant (if wifi needed)
+
+Boot/UEFI:
+  efibootmgr
+  sbctl (for verifying UKI signatures before write)
+  gpg (for verifying repo signatures)
+
+Utils:
+  jq (JSON parsing for repo index)
+  less, vim (minimal editors)
+```
+
+> **Build method**: `mkosi` with `Format=uki`, `Packages=` list above, `ReadOnly=yes`, `RemoveFiles=` aggressive. Output: `arch-recovery.efi` placed on ESP at `/EFI/Linux/arch-recovery.efi`.
+
+---
+
+## 3. RECOVERY UKI STRUCTURE
+
+### 3.1 Kernel Command Line (Baked In)
+
+```
+root=LABEL=arch_recovery rootflags=rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0 init=/usr/lib/systemd/systemd
+```
+
+> **Note**: Uses `systemd` as init (not BusyBox `init`) because:
+> - `systemd` in initrd is supported and tested
+> - Needed for `systemd-networkd`, `systemd-resolved` if used
+> - `systemd-boot` interaction (efi vars) works reliably
+> - Still minimal: ~2 MB vs BusyBox 1 MB — acceptable trade
+
+### 3.2 Initrd Contents (mkosi `InitrdProfiles=default` + custom)
+
+```
+/usr/lib/modules/<kernel>/
+  kernel/fs/btrfs/btrfs.ko
+  kernel/fs/ext4/ext4.ko
+  kernel/drivers/md/dm-mod.ko
+  kernel/drivers/md/dm-crypt.ko
+  kernel/crypto/xts.ko
+  kernel/crypto/aes.ko
+  kernel/drivers/net/ethernet/... (target NIC)
+  kernel/drivers/net/wireless/... (target WiFi)
+/usr/bin/  ← busybox symlinks + bash + curl + btrfs + cryptsetup + efibootmgr + sbctl + gpg + jq
+/etc/
+  os-release (ID=arch-recovery)
+  systemd/network/20-wired.network (DHCP)
+  systemd/network/25-wireless.network (wpa_supplicant@.service)
+  wpa_supplicant/wpa_supplicant.conf (empty, user edits)
+  sbctl/keys/db.crt (public key for verifying UKI signatures)
+  pacman.d/gnupg/ (trusted keys for repo verification)
+/usr/lib/systemd/system/
+  systemd-networkd.service
+  systemd-resolved.service
+  wpa_supplicant@.service
+  reflash.service (oneshot, ConditionKernelCommandLine=reflash=auto)
+```
+
+### 3.3 First-Boot Flow
+
+```
+1. UKI boots → systemd starts
+2. systemd-networkd brings up DHCP (wired) or waits for wpa_supplicant (wifi)
+3. If kernel param `reflash=auto` present:
+     → runs /usr/lib/systemd/scripts/reflash.sh (non-interactive, pulls latest stable)
+   Else:
+     → drops to emergency shell (ash) with banner:
+        "Autonomous Arch OS Recovery
+         Commands: reflash.sh, mount-home, shell
+         Type 'help' for usage."
+```
+
+---
+
+## 4. UPDATE STRATEGY: DECOUPLED FROM NIGHTLY PIPELINE
+
+### Principle: **Recovery updates are manual, infrequent, and version-pinned.**
+
+### 4.1 When Recovery Needs Update
+
+| Trigger | Example |
+|---------|---------|
+| New hardware support needed | New WiFi chipset, NVMe controller, GPU firmware for display in recovery |
+| Crypto/library vulnerability | `curl` CVE, `openssl` CVE, `btrfs-progs` bug |
+| Boot protocol change | systemd-boot entry format change, UKI spec update |
+| Stable repo URL / key rotation | New GPG key, new CDN endpoint |
+
+**Frequency target**: **≤ 2× per year** (not nightly, not monthly).
+
+### 4.2 Update Process (Manual, Documented in RUNBOOK)
+
+```bash
+# On build machine (your laptop), NOT in CI:
+cd autonomous-arch-os/recovery/recovery-rootfs
+
+# 1. Update package list if needed (edit packages.list)
+# 2. Bump version tag
+echo "2024.06.15" > VERSION
+
+# 3. Build locally (requires KVM, root)
+sudo mkosi -f recovery/mkosi.conf -o recovery/output
+
+# 4. Sign with your MOK key (local, air-gapped preferred)
+./image/secure-boot/sign_uki.sh recovery/output/arch-recovery-2024.06.15.efi
+
+# 5. Test in QEMU
+./scripts/test_boot.sh recovery/output/arch-recovery-2024.06.15.efi
+
+# 6. Copy to repo-hosting/custom-stable/recovery/
+cp recovery/output/arch-recovery-2024.06.15.efi ../repo-hosting/custom-stable/recovery/
+cp recovery/output/arch-recovery-2024.06.15.efi.sig ../repo-hosting/custom-stable/recovery/
+
+# 7. Update recovery index (simple JSON)
+cat > ../repo-hosting/custom-stable/recovery/index.json <<EOF
+{
+  "latest": "2024.06.15",
+  "url": "https://repo.your-domain.org/custom-stable/recovery/arch-recovery-2024.06.15.efi",
+  "sig_url": "https://repo.your-domain.org/custom-stable/recovery/arch-recovery-2024.06.15.efi.sig",
+  "sha256": "$(sha256sum recovery/output/arch-recovery-2024.06.15.efi | cut -d' ' -f1)"
+}
+EOF
+
+# 8. Deploy to production (rsync to VPS, or GitHub Release)
+# 9. Document in docs/DECISIONS.md: "Recovery updated to 2024.06.15 — reason: <why>"
+```
+
+### 4.3 How Clients Get the Update
+
+- **New installs**: Recovery partition written by installer with latest `arch-recovery.efi` at install time.
+- **Existing installs**: **No automatic update.** User must manually re-flash recovery partition if they want it (documented in RUNBOOK: "If recovery environment fails to connect/download, boot live USB and re-run installer's 'update recovery' option").
+- **Why not auto-update?** Recovery partition is *the last resort*. If auto-update breaks it, you have *no* fallback. Manual update = you tested it.
+
+---
+
+## 5. SYSTEMD-BOOT ENTRY CONFIGURATION
+
+### 5.1 Loader Entry: `/efi/loader/entries/arch-recovery.conf`
+
+```ini
+# /efi/loader/entries/arch-recovery.conf
+# SPDX-License-Identifier: MIT
+# Generated at install time by scripts/install.sh
+# DO NOT EDIT MANUALLY — regenerate via 'recovery-update-bootentry'
+
+title   Autonomous Arch OS (Recovery)
+version recovery-2024.06.15
+linux   /EFI/Linux/arch-recovery.efi
+options root=LABEL=arch_recovery rootflags=rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0
+id      arch-recovery-<STATIC_UUID_RECOVERY>
+```
+
+### 5.2 Critical Fields Explained
+
+| Field | Value | Why |
+|-------|-------|-----|
+| `title` | `Autonomous Arch OS (Recovery)` | Clear label in boot menu — user sees this at 10s timeout |
+| `version` | `recovery-<DATE>` | Human-readable; matches `VERSION` file in recovery build |
+| `linux` | `/EFI/Linux/arch-recovery.efi` | **Fixed filename** — always this name on ESP. New version overwrites. |
+| `options` | `root=LABEL=arch_recovery ...` | Boots from dedicated recovery partition, not A/B roots |
+| `id` | `arch-recovery-<STATIC_UUID>` | **Stable across rebuilds** — generated once at install (`uuidgen`), stored in `/etc/machine-id-arch-recovery`, baked into UKI via `mkosi.extra/etc/machine-id-arch-recovery` |
+
+### 5.3 Boot Menu Behavior
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    systemd-boot menu (10s timeout)              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   ▸ Autonomous Arch OS (Slot A)        [default, bootcount=0]  │
+│     Autonomous Arch OS (Slot B)        [standby, bootcount=0]  │
+│     Autonomous Arch OS (Recovery)      [recovery-2024.06.15]   │
+│                                                                 │
+│   Press Enter to boot default, 'e' to edit, 'c' for command    │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+- Recovery entry **always visible** (not hidden by `bootcount` logic)
+- Recovery entry **never marked BAD** by boot counting (it's not a primary OS)
+- User can always arrow-down → Enter to reach recovery
+
+---
+
+## 6. REFLASH.SH SPECIFICATION (Core Recovery Logic)
+
+```bash
+#!/usr/bin/env bash
+# /usr/lib/systemd/scripts/reflash.sh
+# Runs in recovery environment — downloads & writes known-good UKI to inactive slot
+
+set -euo pipefail
+
+REPO_BASE="https://repo.your-domain.org/custom-stable"
+RECOVERY_INDEX_URL="${REPO_BASE}/recovery/index.json"
+TARGET_SLOT=""  # auto-detect: the one NOT currently booted
+
+# 1. Fetch index
+echo "Fetching recovery index..."
+INDEX_JSON=$(curl -fsSL --max-time 30 "$RECOVERY_INDEX_URL")
+LATEST_VERSION=$(echo "$INDEX_JSON" | jq -r '.latest')
+UKI_URL=$(echo "$INDEX_JSON" | jq -r '.url')
+SIG_URL=$(echo "$INDEX_JSON" | jq -r '.sig_url')
+EXPECTED_SHA256=$(echo "$INDEX_JSON" | jq -r '.sha256')
+
+# 2. Determine inactive slot
+CURRENT_ROOT=$(findmnt -no SOURCE / | sed 's/\[.*//')
+if [[ "$CURRENT_ROOT" == *root_a* ]]; then
+    TARGET_LABEL="arch_root_b"
+    TARGET_SUBVOL="@_b"
+    TARGET_ENTRY_ID="arch-b-<STATIC_UUID_B>"
+else
+    TARGET_LABEL="arch_root_a"
+    TARGET_SUBVOL="@_a"
+    TARGET_ENTRY_ID="arch-a-<STATIC_UUID_A>"
+fi
+
+echo "Target slot: $TARGET_LABEL ($TARGET_SUBVOL)"
+
+# 3. Download UKI + signature
+echo "Downloading UKI: $UKI_URL"
+curl -fsSL --max-time 120 -o /tmp/arch-latest.efi "$UKI_URL"
+curl -fsSL --max-time 30 -o /tmp/arch-latest.efi.sig "$SIG_URL"
+
+# 4. Verify signature (GPG key baked in recovery)
+echo "Verifying GPG signature..."
+gpgv --keyring /etc/pacman.d/gnupg/pubring.gpg /tmp/arch-latest.efi.sig /tmp/arch-latest.efi
+
+# 5. Verify SHA256
+echo "Verifying SHA256..."
+ACTUAL_SHA256=$(sha256sum /tmp/arch-latest.efi | cut -d' ' -f1)
+[[ "$ACTUAL_SHA256" == "$EXPECTED_SHA256" ]] || { echo "SHA256 mismatch!"; exit 1; }
+
+# 6. Verify UKI signature (sbctl) — proves it was signed by YOUR MOK key
+echo "Verifying UKI signature..."
+sbverify --cert /etc/sbctl/keys/db.crt /tmp/arch-latest.efi
+
+# 7. Mount target root partition
+echo "Mounting target partition..."
+mkdir -p /mnt/target
+mount -L "$TARGET_LABEL" -o subvol=/ /mnt/target
+
+# 8. Write UKI to ESP (shared, so accessible from recovery)
+echo "Writing UKI to ESP..."
+mkdir -p /mnt/target/efi/EFI/Linux
+cp /tmp/arch-latest.efi /mnt/target/efi/EFI/Linux/arch-${LATEST_VERSION}.efi
+
+# 9. Update loader entry for target slot
+echo "Updating loader entry..."
+cat > /mnt/target/efi/loader/entries/${TARGET_ENTRY_ID}.conf <<EOF
+title   Autonomous Arch OS (Slot ${TARGET_LABEL##*_})
+version ${LATEST_VERSION}
+linux   /EFI/Linux/arch-${LATEST_VERSION}.efi
+options root=LABEL=${TARGET_LABEL} rootflags=subvol=${TARGET_SUBVOL} rw quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 enforcing=0
+id      ${TARGET_ENTRY_ID}
+EOF
+
+# 10. Set next boot to target slot
+echo "Setting next boot to recovered slot..."
+efibootmgr --bootnext "$(efibootmgr | grep "$TARGET_ENTRY_ID" | sed 's/^Boot\([0-9]*\).*/\1/')"
+
+# 11. Sync & reboot
+sync
+umount /mnt/target
+echo "Recovery complete. Rebooting in 5 seconds..."
+sleep 5
+reboot
+```
+
+---
+
+## 7. MOUNT-HOME HELPER (Data Recovery)
+
+```bash
+#!/usr/bin/env bash
+# /usr/bin/mount-home
+# Mounts @home subvolume read-only for manual file recovery
+
+set -euo pipefail
+
+VAR_LABEL="arch_var"
+HOME_SUBVOL="@home"
+MOUNT_POINT="/mnt/home"
+
+echo "Mounting $VAR_LABEL:$HOME_SUBVOL at $MOUNT_POINT (read-only)..."
+mkdir -p "$MOUNT_POINT"
+mount -L "$VAR_LABEL" -o subvol="$HOME_SUBVOL",ro "$MOUNT_POINT"
+
+echo "Done. Your home directories are at:"
+ls -1 "$MOUNT_POINT"
+echo ""
+echo "To copy files to a USB drive:"
+echo "  1. Insert USB, find it with: lsblk"
+echo "  2. Mount: mount /dev/sdX1 /mnt/usb"
+echo "  3. Copy: cp -r $MOUNT_POINT/<user>/Documents /mnt/usb/"
+echo ""
+echo "When done: umount $MOUNT_POINT"
+```
+
+---
+
+## 8. INTEGRATION CHECKLIST
+
+| Component | File / Location | Status |
+|-----------|-----------------|--------|
+| Recovery partition in `layout.sfdisk` | `partitions/layout.sfdisk` | ☐ Add |
+| Recovery mkosi config | `recovery/mkosi.conf` | ☐ Create |
+| Recovery package list | `recovery/packages.list` | ☐ Create |
+| Recovery mkosi.extra tree | `recovery/mkosi.extra/**` | ☐ Create |
+| Recovery postinst (sign UKI) | `recovery/mkosi.postinst` | ☐ Create |
+| reflash.sh script | `recovery/mkosi.extra/usr/lib/systemd/scripts/reflash.sh` | ☐ Create |
+| mount-home script | `recovery/mkosi.extra/usr/bin/mount-home` | ☐ Create |
+| Recovery boot entry template | `recovery/boot-entry.conf` | ☐ Create |
+| Installer integration | `scripts/install.sh` → writes recovery partition + boot entry | ☐ Modify |
+| RUNBOOK recovery section | `docs/RUNBOOK.md` | ☐ Write |
+| Manual update procedure | `docs/RUNBOOK.md` | ☐ Write |
+
+---
+
+## 9. SUMMARY: DESIGN PROPERTIES
+
+| Property | Value |
+|----------|-------|
+| **Partition** | Dedicated 512 MiB ext4, label `arch_recovery` |
+| **Format** | UKI (kernel + initrd + cmdline), signed with MOK key |
+| **Init** | systemd (minimal initrd profile) |
+| **Shell** | BusyBox `ash` + static `bash` |
+| **Network** | `systemd-networkd` (DHCP) + `wpa_supplicant` (optional WiFi) |
+| **Core tools** | `btrfs-progs`, `cryptsetup`, `curl`, `gpg`, `efibootmgr`, `sbctl`, `jq` |
+| **Size target** | < 100 MB installed, < 50 MB UKI |
+| **Update cadence** | Manual, ≤ 2×/year, documented in RUNBOOK |
+| **Boot entry** | Always visible in systemd-boot menu, stable `id` |
+| **Auto-reflash** | Kernel param `reflash=auto` (for headless/remote recovery) |
+| **Data recovery** | `mount-home` helper mounts `@home` read-only |
+
+---
+
+**END OF RECOVERY ENVIRONMENT DESIGN**  
+*Ready for implementation per checklist in §8.*
+================================================================================
+VERIFIED SOURCE FACTS (ground truth — see instructions above)
+================================================================================
+
+## What's wrong in the two documents above, specifically
+
+| Claim in the old documents | Reality (verified from source) |
+|---|---|
+| Two physical partitions, `root_a` + `root_b`, swapped via systemd-boot | arkdep uses **one** root partition (`LABEL=arkane_root`); each update is a **new Btrfs subvolume** at `/arkdep/deployments/<id>/rootfs`. Old ones are kept (`deploy_keep=3` by default) and pruned, not overwritten. |
+| "arkdep's healthcheck is the exact 3-strikes rollback logic you need" | arkdep's `healthcheck()` function does **housekeeping only** — orphaned deployments, stale cache files, missing GPG keys. It has nothing to do with boot success/failure counting. |
+| `/var` as one shared subvolume, `/etc` via OverlayFS upper dir | arkdep shares only three subvolumes outright — `home`, `root`, `flatpak`. Everything else in `/var` and `/etc` is part of each deployment's own snapshot; a **curated allow-list of specific files** (`migrate_files`) is explicitly copied forward at deploy time. No OverlayFS involved. |
+| Document 2's `reflash.sh`: detects inactive slot via `if [[ "$CURRENT_ROOT" == *root_a* ]]` string matching, writes to the other named partition | Real arkdep determines the currently-running deployment by reading `/proc/self/mountinfo` for the mounted subvolume path — there is no "slot" to string-match, and a new deployment is a new subvolume, not an overwrite of a pre-existing partition. |
+| Document 2's boot menu mockup: "Autonomous Arch OS (Slot A)" / "(Slot B)" | Should show one entry per kept deployment (up to `deploy_keep`, default 3), not two fixed slots. |
+| `mkosi.conf`: `ReadOnly=yes` makes `/usr` read-only | **This key doesn't exist in mkosi.** Confirmed against mkosi's own `config.py` — the only `read_only` in the codebase is an unrelated `ConsoleMode` enum value. Real immutability is applied *after* the build, via `btrfs property set -ts <path> ro true` on the deployment subvolume — that's arkdep's job, not mkosi's. |
+| `mkosi.conf`: `SbsignKey=` / `SbsignCertificate=` | **Wrong names.** Confirmed against mkosi's actual man page: the real keys are `SecureBootKey=` and `SecureBootCertificate=`, alongside `SecureBoot=` (enable it), `SecureBootSignTool=`, and `SecureBootAutoEnroll=`. |
+
+## Literal excerpts backing the table above
+
+--- ARKDEP: kernel command line template (per deployment) ---
+kernel_params='root="LABEL=arkane_root" rootflags=subvol=/arkdep/deployments/%target%/rootfs rw'
+
+--- ARKDEP: shared (always-writable) subvolumes, created once at init ---
+btrfs subvolume create $arkdep_dir/shared/home
+btrfs subvolume create $arkdep_dir/shared/root
+btrfs subvolume create $arkdep_dir/shared/flatpak
+# these three are the ONLY unconditionally shared subvolumes
+
+--- ARKDEP: default curated file migration list (copied forward at deploy time,
+    NOT a shared mount) ---
+dist_migrate_files="'var/usrlocal' 'var/opt' 'var/srv' 'var/lib/AccountsService'
+'var/lib/bluetooth' 'var/lib/NetworkManager' 'var/lib/arkane'
+'var/lib/power-profiles-daemon' 'var/db' 'etc/localtime' 'etc/locale.gen'
+'etc/locale.conf' 'etc/NetworkManager/system-connections' 'etc/ssh'
+'etc/fstab' 'etc/crypttab' 'etc/luks-keys' 'etc/passwd' 'etc/shadow'
+'etc/group' 'etc/subuid' 'etc/subgid'"
+
+--- ARKDEP: how many old deployments are retained ---
+dist_deploy_keep=3   # configurable; oldest pruned beyond this count
+
+--- ARKDEP: how a deployment is marked immutable (post-build, not an mkosi step) ---
+btrfs property set -ts $workdir ro true       # root of the deployment
+btrfs property set -ts $workdir/etc ro true
+btrfs property set -ts $workdir/var ro true
+# toggled back to 'ro false' temporarily only during migrate_files copy-in,
+# then re-set to 'ro true' before the deployment is considered live
+
+--- ARKDEP: healthcheck() function, in full behavior (not abridged) ---
+# Checks for: deployments present on disk but not in the tracker file,
+# cache files left over from aborted/removed deployments, and whether
+# gpg_signature_check is enabled with no trusted keys installed.
+# It does NOT check boot success, does NOT read EFI variables, and is not
+# invoked automatically on boot failure — it runs when the arkdep CLI is
+# invoked (always_healthcheck=1 by default means "on every CLI invocation,"
+# not "on every boot").
+
+--- ARKDEP: how the CLI determines the CURRENTLY RUNNING deployment ---
+mountinfo=($(cat /proc/self/mountinfo | head -n 1))
+mountinfo=${mountinfo[3]}      # subvol field
+deployment_id_old=${mountinfo##*/}   # trailing path component = current ID
+# i.e. it reads which subvolume is actually mounted as / right now,
+# it does not track this in a separate state file
+
+--- MKOSI: confirmed real option names (from mkosi's own man page/config.py) ---
+SecureBoot=                  # enable UEFI SecureBoot signing
+SecureBootKey=                # replaces the "SbsignKey=" used previously
+SecureBootCertificate=        # replaces "SbsignCertificate="
+SecureBootSignTool=
+SecureBootAutoEnroll=
+# "ReadOnly=" does not exist anywhere in mkosi's config schema.
+InitrdProfiles=               # this one WAS correct, confirmed real
+
+
+================================================================================
+YOUR TASK
+================================================================================
+
+Using ONLY the verified information above (plus arkdep's real multi-deployment
+model as the storage/update mechanism), revise BOTH old documents together:
+
+1. Replace the two-physical-partition layout (Document 1) with a single root
+   partition (label `arch_root`, or keep `arkane_root`-style naming — your
+   call, state which and why) containing N kept deployment subvolumes,
+   matching arkdep's real structure. Rewrite the partition table
+   (`partitions/layout.sfdisk`) accordingly — this should now have far fewer
+   partitions than the original A/B version (no separate root_a/root_b),
+   though it should still keep the dedicated recovery partition from
+   Document 2 (that part of Document 2 was NOT wrong — only its slot-
+   detection logic and boot menu were).
+
+2. Decide explicitly: should this project ALSO layer systemd-boot's real,
+   native automatic boot-counting fallback (a genuine systemd-boot feature,
+   confirmed separately, independent of arkdep) on top of arkdep's
+   manual-rollback-by-reselecting-a-loader-entry model? arkdep itself does
+   not do automatic fallback on boot failure — a user has to notice the
+   problem and pick an older entry from the boot menu themselves. State
+   whether you recommend adding automatic boot-counting as an enhancement
+   layered on top of arkdep's deployment model, and if so, exactly how the
+   two interact (one loader entry per kept deployment, each with its own
+   boot counter, oldest-still-good entry as automatic fallback target).
+
+3. Rewrite the Btrfs subvolume tree, the state diagram, and the "what this
+   protects against / doesn't protect against" tables from Document 1 to
+   match this real model — including being explicit that `home`, `root`,
+   and `flatpak` are the ONLY unconditionally shared subvolumes, and that
+   everything else persisting across an update depends on being in the
+   `migrate_files` allow-list (feel free to extend it for this project's
+   needs, but state clearly when you're extending it beyond arkdep's default).
+
+4. Rewrite Document 2's recovery mechanism to match: replace the
+   root_a/root_b string-matching "detect inactive slot" logic in its
+   `reflash.sh` reference script with logic that (a) reads
+   `/proc/self/mountinfo` to find the currently-mounted deployment, and
+   (b) creates a NEW deployment subvolume for the re-flashed image rather
+   than overwriting a fixed partition. Replace its "Slot A / Slot B" boot
+   menu mockup with one showing multiple numbered/dated deployment entries.
+
+5. Produce a single corrected mkosi.conf snippet (replacing the signing
+   section referenced across the old documents) using the real
+   `SecureBoot=` / `SecureBootKey=` / `SecureBootCertificate=` /
+   `SecureBootSignTool=` / `SecureBootAutoEnroll=` keys, and explicitly
+   remove any invented `ReadOnly=yes` line, replacing it with a one-line
+   note that read-only enforcement happens post-build via `btrfs property
+   set -ts <path> ro true`, applied by the deploy script, not by mkosi.
+
+Structure your output as two clearly separated, complete replacement
+documents — "REVISED DOCUMENT 1" and "REVISED DOCUMENT 2" — each ready to
+fully replace the corresponding old document, not a diff or a partial patch.
+Cross-reference between them explicitly wherever Document 2 depends on a
+decision made in Document 1 (e.g. the deployment path scheme, the
+partition label), so they stay internally consistent with each other.
