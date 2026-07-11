@@ -3,7 +3,7 @@
    transitions. Inspired by Qylock Nothing's circular action buttons
    and KDE blur patterns, reimagined for GTK/wlogout rendering. */
 
-@import url("../theme/colors.css");
+
 
 * {
     font-family: "JetBrains Mono Nerd Font", monospace;
@@ -16,7 +16,7 @@ window {
 }
 
 button {
-    color: @textPrimary;
+    color: #C7CACD;
     background-color: rgba(18, 20, 22, 0.85);
     border: 1px solid rgba(154, 160, 166, 0.12);
     border-radius: 50%;
@@ -38,7 +38,7 @@ button:hover {
     color: #E8EAED;
     outline: none;
     box-shadow: 0 0 30px rgba(74, 109, 140, 0.25),
-                0 4px 24px rgba(0, 0, 0, 0.4);
+        0 4px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* --- Per-button SVG icons --- */
