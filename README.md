@@ -415,6 +415,15 @@ merged as-is.
   battery, either drop the `exec-once` line for it in `hyprland.conf`
   (falls back to the static PNG automatically) or look at wiring up
   `mpvpaper-stop` (AUR, not installed by default) to pause on idle/lock.
+- **Icarus scene gallery.** `SUPER W` opens the gallery; it understands
+  static wallpapers and live `.gif`/video entries. When `mpvpaper` is
+  present, choosing a live entry plays it and derives the UI palette from its
+  paired static image; otherwise it automatically falls back to that still.
+  `SUPER SHIFT W` randomly selects an original Icarus scene. The choice
+  persists across login sessions.
+- External theme packs were evaluated as visual research rather than copied
+  wholesale. See `docs/THEME_RESEARCH.md` for the compatibility and licence
+  decisions behind that boundary.
 - **The `layerrule` blur syntax is on the older side of an active Hyprland
   config migration** (see the theme-pass note above) — if Waybar/Rofi/
   notifications stop looking blurred after a Hyprland update, that's the
