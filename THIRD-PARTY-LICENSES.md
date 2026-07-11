@@ -2,6 +2,16 @@
 
 This distribution incorporates code and assets from the following open-source projects:
 
+## Awesome Linux Software
+
+Project: https://github.com/luong-komorebi/Awesome-Linux-Software
+
+License: CC BY 4.0
+
+Use: Its application curation informed Icarus's opt-in post-install profiles.
+The upstream catalogue, artwork, and source files are not included in this
+repository. See `docs/AWESOME_LINUX_SOFTWARE.md` for attribution details.
+
 ## btrfs-assistant
 Project: https://gitlab.com/btrfs-assistant/btrfs-assistant
 License: GPL-3.0

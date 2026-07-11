@@ -21,6 +21,8 @@ anything new.
   memory/thermal tuning, dev tooling (Layer 6)
 - Native browser/Office layer + AUR helper bootstrap (Layer 7)
 - Plymouth silent boot, systemd-boot only (Layer 8)
+- Opt-in curated application profiles sourced from Awesome Linux Software
+  discovery (Layer 9)
 - Manifest-driven conductor (`layers/MANIFEST`) — see "Adding a new layer" below
 - `burn-in-checklist.md` for post-install validation
 

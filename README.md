@@ -23,7 +23,8 @@ icarus-archos/
 │   ├── 05-ui-winhybrid.sh          # Chroot: Hyprland/Waybar/Wine/greetd + lock/idle/notifications/dashboard
 │   ├── 06-ai-engineering-perf.sh   # Chroot (soft): iGPU compute stack, sched_ext, memory/thermal tuning, dev tooling
 │   ├── 07-native-apps.sh           # Chroot (soft): Chromium/Chrome, paru bootstrap, LibreOffice, Eww deps
-│   └── 08-silent-boot.sh           # Chroot (soft): Plymouth splash + quiet boot, systemd-boot only
+│   ├── 08-silent-boot.sh           # Chroot (soft): Plymouth splash + quiet boot, systemd-boot only
+│   └── 09-curated-apps.sh          # Chroot (soft): opt-in official-repository app profiles
 ├── configs/
 │   ├── hypr/{hyprland,hyprlock,hypridle}.conf
 │   ├── waybar/{config.jsonc,style.css}
@@ -63,6 +64,7 @@ Useful flags:
 | `--force-xe` | Force the `xe` GPU driver even if your chip isn't a confirmed xe-default generation | off |
 | `--disable-mitigations` | Add `mitigations=off` to the kernel command line | off |
 | `--redundant-metadata` | Keep Btrfs's default `dup` metadata profile instead of `single` | off |
+| `--app-profiles "LIST"` | Install Layer 9 profiles before first boot, overriding `configs/apps/profiles.conf` | `essentials sharing` |
 | `--resume` | Skip layers whose sentinel already exists | off |
 
 If it dies partway through, fix the reported problem and re-run with
@@ -250,6 +252,16 @@ safe to build with:
     Chrome with no install at all; `teams-for-linux`,
     `microsoft-edge-stable-bin`, and `visual-studio-code-bin` are one
     `paru -S` away if you want them specifically.
+
+- **Layer 9 — Curated applications** (soft, non-fatal). The project uses
+  [Awesome Linux Software](https://github.com/luong-komorebi/Awesome-Linux-Software)
+  as a discovery source, rather than copying or blindly installing its entire
+  catalogue. Layer 9 installs `essentials sharing` **before first boot** by
+  default. Change `configs/apps/profiles.conf` before assembly, or pass
+  `--app-profiles "development gaming"` to the conductor for a one-off image.
+  `icarus-apps list` remains available after boot for additional profiles. The
+  tool only installs official Arch packages. Attribution and the source licence are recorded in
+  `docs/AWESOME_LINUX_SOFTWARE.md`.
 
 ## Theme pass — "Intelligent Darkness"
 

@@ -21,6 +21,8 @@
 #                            OFF by default — a conscious security tradeoff.
 #   --redundant-metadata    Keep Btrfs's default 'dup' metadata profile (safer,
 #                            more writes) instead of '-m single'.
+#   --app-profiles LIST     Space-separated Layer 9 application profiles to
+#                            install before first boot. Overrides profiles.conf.
 #   --repo-path PATH        Path to this repository. Defaults to the directory
 #                            containing this script.
 #   --resume                Skip layers whose sentinel files already exist.
@@ -41,6 +43,7 @@ export ICARUS_ALLOW_INTERNAL=0
 export ICARUS_FORCE_XE=0
 export ICARUS_DISABLE_MITIGATIONS=0
 export ICARUS_REDUNDANT_METADATA=0
+export ICARUS_APP_PROFILES=""
 
 HOST_LOG_DIR="/mnt/var/log/icarus"
 CHROOT_LOG_DIR="/var/log/icarus"
@@ -67,6 +70,8 @@ while [[ $# -gt 0 ]]; do
         --force-xe) ICARUS_FORCE_XE=1; shift ;;
         --disable-mitigations) ICARUS_DISABLE_MITIGATIONS=1; shift ;;
         --redundant-metadata) ICARUS_REDUNDANT_METADATA=1; shift ;;
+        --app-profiles) ICARUS_APP_PROFILES="$2"; shift 2 ;;
+        --app-profiles=*) ICARUS_APP_PROFILES="${1#*=}"; shift ;;
         --repo-path) REPO_PATH="$2"; shift 2 ;;
         --repo-path=*) REPO_PATH="${1#*=}"; shift ;;
         --resume) RESUME=1; shift ;;
@@ -74,7 +79,7 @@ while [[ $# -gt 0 ]]; do
         *) fatal "Unknown argument: $1" ;;
     esac
 done
-export ICARUS_TARGET_DEVICE ICARUS_ALLOW_INTERNAL ICARUS_FORCE_XE ICARUS_DISABLE_MITIGATIONS ICARUS_REDUNDANT_METADATA
+export ICARUS_TARGET_DEVICE ICARUS_ALLOW_INTERNAL ICARUS_FORCE_XE ICARUS_DISABLE_MITIGATIONS ICARUS_REDUNDANT_METADATA ICARUS_APP_PROFILES
 
 [[ -n "$ICARUS_TARGET_DEVICE" ]] || fatal "You must pass --target /dev/sdX. There is no default device; this is intentional so a wrong disk can't be wiped by omission."
 [[ "$(id -u)" -eq 0 ]] || fatal "This script must run as root."
@@ -112,6 +117,7 @@ run_layer() {
             ICARUS_FORCE_XE="$ICARUS_FORCE_XE" \
             ICARUS_DISABLE_MITIGATIONS="$ICARUS_DISABLE_MITIGATIONS" \
             ICARUS_REDUNDANT_METADATA="$ICARUS_REDUNDANT_METADATA" \
+            ICARUS_APP_PROFILES="$ICARUS_APP_PROFILES" \
             bash "${CHROOT_REPO_PATH}/layers/${script}" 2>&1 | tee -a "${HOST_LOG_DIR}/assemble.log"
         status=${PIPESTATUS[0]}
     else
@@ -130,7 +136,7 @@ run_layer() {
 }
 
 log "Icarus-ArchOS assembly starting. Target device: ${ICARUS_TARGET_DEVICE}"
-log "Flags: allow_internal=${ICARUS_ALLOW_INTERNAL} force_xe=${ICARUS_FORCE_XE} disable_mitigations=${ICARUS_DISABLE_MITIGATIONS} redundant_metadata=${ICARUS_REDUNDANT_METADATA}"
+log "Flags: allow_internal=${ICARUS_ALLOW_INTERNAL} force_xe=${ICARUS_FORCE_XE} disable_mitigations=${ICARUS_DISABLE_MITIGATIONS} redundant_metadata=${ICARUS_REDUNDANT_METADATA} app_profiles=${ICARUS_APP_PROFILES:-config-default}"
 
 while IFS=':' read -r name context fail_mode script; do
     [[ -z "$name" || "$name" == \#* ]] && continue
