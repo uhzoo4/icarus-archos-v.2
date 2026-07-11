@@ -82,7 +82,8 @@ rg -Fq 'systemctl enable bluetooth.service' layers/05-ui-winhybrid.sh \
     || fail "Layer 5 does not enable Bluetooth"
 rg -Fq 'icarus-powermenu-entries.sh" /usr/local/bin/icarus-powermenu-entries' layers/05-ui-winhybrid.sh \
     || fail "Layer 5 does not install the Rofi power-menu script"
-rg -Fq 'configs/kitty/colors.conf" /etc/skel/.config/kitty/colors.conf' layers/05-ui-winhybrid.sh \
+rg -Fq 'configs/kitty/colors.conf' layers/05-ui-winhybrid.sh \
+    && rg -Fq 'skel/.config/kitty/colors.conf' layers/05-ui-winhybrid.sh \
     || fail "Layer 5 does not install Kitty's palette fallback"
 rg -Fq 'dunstctl is-paused' configs/eww/dashboard.yuck \
     || fail "Eww notification control must use the installed Dunst daemon"
