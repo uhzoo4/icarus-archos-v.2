@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Icarus Ring
+Description=Concentric ring spinner in steel-blue on near-black — Icarus-ArchOS boot theme.
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/icarus-ring
+ScriptFile=/usr/share/plymouth/themes/icarus-ring/icarus-ring.script

@@ -23,8 +23,10 @@ anything new.
 - Plymouth silent boot, systemd-boot only (Layer 8)
 - Opt-in curated application profiles sourced from Awesome Linux Software
   discovery (Layer 9)
+- Bluetooth service and the Blueman dashboard control (Layer 5)
 - Manifest-driven conductor (`layers/MANIFEST`) — see "Adding a new layer" below
 - `burn-in-checklist.md` for post-install validation
+- Repository contract checks and GitHub Actions validation (`scripts/verify-repo.sh`)
 
 **Open / in progress:**
 - `pkgs/linux-icarus/PKGBUILD` targets `7.2-rc1` via git+tag — verify the
@@ -45,10 +47,11 @@ anything new.
   needs a Btrfs-aware swapfile (NOCOW, sized ≥ RAM) plus `resume=` /
   `resume_offset=` kernel parameters on both boot entries — see the
   backlog below.
-- No Bluetooth stack at all (not installed, not just missing a GUI) and
-  no firewall — both real gaps, neither addressed yet
-- No automated testing of the scripts themselves (only syntax-checked) —
-  the only real test is running the whole thing on your actual hardware
+- No firewall — the desktop Bluetooth stack is installed, but inbound-network
+  policy remains an intentional open item
+- CI now checks shell/Python syntax plus manifest, theme, dashboard,
+  wallpaper, and safety contracts. A complete install and the hardware
+  burn-in checklist are still required before trusting a release.
 
 
 ## The rule for anything new
@@ -113,8 +116,6 @@ inline somewhere it doesn't belong.
   survive a full power-off. This touches Layer 1 (swapfile), 3a, and 3b
   (boot params) — do it as its own focused pass, not bundled into
   unrelated changes.
-- Bluetooth stack (`bluez`, `bluez-utils`, and a GUI like `blueman`) —
-  currently doesn't exist at any level, not just missing a GUI front-end.
 - A firewall (`ufw` or `firewalld`) — this system currently has none.
 
 **Desktop / UX**
@@ -122,12 +123,6 @@ inline somewhere it doesn't belong.
 - A proper macOS-style dock (e.g. `nwg-dock-hyprland`) instead of relying
   on Waybar alone for app switching
 - Per-app Hyprland window rules beyond the current Wine defaults
-- Dunst and kitty don't participate in the dynamic wallpaper-driven accent
-  system (`icarus-palette.py`) — both use static hardcoded colors, unlike
-  Hyprland/Waybar/Rofi/GTK/Eww/Cava. Dunst's config format has no import
-  mechanism so this is an inherent limitation there; kitty does support
-  `include`, so a kitty-format color fragment could be added to the
-  generator's output if this is worth closing.
 
 **Windows compatibility**
 - Per-application Bottles presets checked into the repo (exported Bottles
@@ -146,8 +141,9 @@ inline somewhere it doesn't belong.
   (kernel upgrades especially), with a rollback script — this is probably
   the single highest-value addition given everything else already assumes
   Btrfs
-- CI-style syntax/shellcheck validation on every layer script before it's
-  considered mergeable, once there's a `.git` history worth protecting
+- Add a bootable VM smoke test once a reproducible Arch image pipeline exists;
+  the current CI validates repository contracts but intentionally cannot test
+  firmware, graphics, or a real disk install
 
 ## Versioning this repo
 

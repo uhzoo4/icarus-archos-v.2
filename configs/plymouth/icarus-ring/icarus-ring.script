@@ -1,0 +1,116 @@
+# Icarus-ArchOS Plymouth boot theme — "Icarus Ring"
+#
+# Concentric ring spinner in steel-blue that pulses on a near-black
+# background. "ICARUS" text fades in after a brief delay. A thin
+# progress bar fills along the bottom edge.
+#
+# Original Plymouth script — no frames or images from any third-party
+# theme are used. The adi1090x Plymouth Themes collection was studied
+# for animation timing and composition concepts only.
+
+# ─── Background ───
+Window.SetBackgroundTopColor(0.020, 0.020, 0.020);
+Window.SetBackgroundBottomColor(0.020, 0.020, 0.020);
+
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+center_x = screen_width / 2;
+center_y = screen_height / 2;
+
+# ─── Ring animation ───
+# We create concentric ring sprites using Plymouth's image API.
+# Each ring is a small circle image scaled and positioned at center.
+
+# Utility: create a filled circle image of the given diameter and color.
+# Plymouth script doesn't support drawing primitives directly, so we
+# use a 1x1 pixel image stretched with opacity to simulate rings.
+# For a proper ring, we create two circles (outer filled, inner cutout).
+
+# ─── Outer ring sprite ───
+ring_outer = Image("ring-outer.png");
+ring_sprite = Sprite(ring_outer);
+ring_sprite.SetPosition(center_x - 60, center_y - 100, 10);
+ring_sprite.SetOpacity(0.0);
+
+# ─── Inner glow sprite ───
+ring_inner = Image("ring-inner.png");
+glow_sprite = Sprite(ring_inner);
+glow_sprite.SetPosition(center_x - 30, center_y - 70, 11);
+glow_sprite.SetOpacity(0.0);
+
+# ─── ICARUS text ───
+icarus_text = Image.Text("I C A R U S", 0.58, 0.64, 0.68, 1, "JetBrains Mono Nerd Font 16");
+text_sprite = Sprite(icarus_text);
+text_sprite.SetPosition(center_x - icarus_text.GetWidth() / 2, center_y + 50, 10);
+text_sprite.SetOpacity(0.0);
+
+# ─── Progress bar ───
+progress_box = Image("progress-bar.png");
+progress_sprite = Sprite(progress_box);
+progress_sprite.SetPosition(0, screen_height - 3, 10);
+progress_sprite.SetOpacity(0.0);
+
+# ─── Animation state ───
+global.frame = 0;
+global.text_shown = 0;
+
+fun refresh_callback() {
+    global.frame++;
+
+    # Ring pulse: opacity oscillates between 0.3 and 0.9
+    pulse = Math.Abs(Math.Sin(global.frame * 0.04));
+    ring_opacity = 0.3 + pulse * 0.6;
+    ring_sprite.SetOpacity(ring_opacity);
+
+    # Inner glow: slightly offset phase for depth
+    glow_pulse = Math.Abs(Math.Sin(global.frame * 0.04 + 1.5));
+    glow_sprite.SetOpacity(0.2 + glow_pulse * 0.5);
+
+    # Text fade-in after ~2 seconds (60 frames at ~30fps)
+    if (global.frame > 60 && global.text_shown < 1.0) {
+        global.text_shown = global.text_shown + 0.02;
+        if (global.text_shown > 1.0) global.text_shown = 1.0;
+        text_sprite.SetOpacity(global.text_shown * 0.6);
+    }
+}
+
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# ─── Boot progress ───
+fun boot_progress_callback(duration, progress) {
+    if (progress >= 0) {
+        progress_sprite.SetOpacity(0.5);
+        # Scale the progress bar image to fill the screen width proportionally
+        scaled = progress_box.Scale(screen_width * progress, 3);
+        progress_sprite.SetImage(scaled);
+    }
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_callback);
+
+# ─── Password prompt (disk encryption) ───
+fun display_password_callback(prompt, bullets) {
+    # Show a minimal password field
+    pass_text = Image.Text(prompt, 0.78, 0.80, 0.82, 1, "JetBrains Mono Nerd Font 14");
+    pass_sprite = Sprite(pass_text);
+    pass_sprite.SetPosition(center_x - pass_text.GetWidth() / 2, center_y + 100, 15);
+
+    bullet_string = "";
+    for (i = 0; i < bullets; i++) {
+        bullet_string = bullet_string + "● ";
+    }
+    bullet_img = Image.Text(bullet_string, 0.29, 0.43, 0.55, 1, "JetBrains Mono Nerd Font 18");
+    bullet_sprite = Sprite(bullet_img);
+    bullet_sprite.SetPosition(center_x - bullet_img.GetWidth() / 2, center_y + 140, 15);
+}
+
+Plymouth.SetDisplayPasswordFunction(display_password_callback);
+
+# ─── Message display ───
+fun message_callback(text) {
+    msg_img = Image.Text(text, 0.58, 0.64, 0.68, 0.6, "JetBrains Mono Nerd Font 11");
+    msg_sprite = Sprite(msg_img);
+    msg_sprite.SetPosition(center_x - msg_img.GetWidth() / 2, screen_height - 40, 10);
+}
+
+Plymouth.SetMessageFunction(message_callback);

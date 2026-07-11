@@ -1,51 +1,138 @@
 #!/usr/bin/env bash
 # Icarus Dynamic Wallpaper Switcher
 #
-# Installed as /usr/local/bin/icarus-wallpaper-switch — deliberately NOT
-# named icarus-wallpaper, which is the startup daemon wrapper
-# (configs/wallpaper/icarus-wallpaper.sh) that picks live vs static and is
-# meant to run once at session start via exec-once. This script is the
-# interactive picker, bound to a keybind, invoked repeatedly.
+# Installed as /usr/local/bin/icarus-wallpaper-switch. It supports static
+# images and live media; live selections fall back to their paired still when
+# mpvpaper is unavailable. A selected scene is saved and restored next login.
+
+set -euo pipefail
 
 WALLPAPER_DIR="/usr/share/backgrounds/icarus/references"
+DEFAULT_STATIC="/usr/share/backgrounds/icarus/icarus-midnight.png"
+STATE_FILE="${HOME}/.config/icarus/wallpaper.sh"
+MPVPAPER_OPTIONS="no-audio --loop-file=inf --hwdec=auto-copy --panscan=1.0"
+
+usage() {
+    cat <<'EOF'
+Usage: icarus-wallpaper-switch [--set FILENAME | --random]
+
+Without an argument, opens the wallpaper picker. --random chooses from the
+original Icarus scenes. Files ending in .gif, .mp4, .webm, or .mkv are played
+as live wallpapers when mpvpaper is available; otherwise their paired static
+image is used.
+EOF
+}
 
 if [[ ! -d "$WALLPAPER_DIR" ]]; then
-    notify-send "Wallpaper switcher" "No reference wallpapers found at $WALLPAPER_DIR" 2>/dev/null
-    echo "Error: Wallpaper directory not found at $WALLPAPER_DIR"
+    notify-send "Wallpaper switcher" "No reference wallpapers found at $WALLPAPER_DIR" 2>/dev/null || true
+    echo "Error: Wallpaper directory not found at $WALLPAPER_DIR" >&2
     exit 1
 fi
 
-menu_items=""
-for file in "$WALLPAPER_DIR"/*; do
-    if [[ -f "$file" ]]; then
-        filename=$(basename "$file")
-        menu_items+="${filename}\0icon\x1f${file}\n"
-    fi
-done
+is_live_media() {
+    case "${1,,}" in
+        *.gif|*.mp4|*.webm|*.mkv) return 0 ;;
+        *) return 1 ;;
+    esac
+}
 
-selected=$(echo -en "$menu_items" | rofi -dmenu -i -replace -config ~/.config/rofi/wallpaper.rasi -p "Select Wallpaper")
+palette_source_for() {
+    local file="$1" stem candidate extension
+    stem="${file%.*}"
+    stem="${stem%-live}"
+
+    for extension in png jpg jpeg; do
+        candidate="${stem}.${extension}"
+        if [[ -f "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    printf '%s\n' "$DEFAULT_STATIC"
+}
+
+write_state() {
+    local renderer="$1" file="$2"
+    mkdir -p "$(dirname "$STATE_FILE")"
+    printf 'exec ' > "$STATE_FILE"
+
+    if [[ "$renderer" == "mpvpaper" ]]; then
+        printf '%q ' mpvpaper -o "$MPVPAPER_OPTIONS" '*' "$file" >> "$STATE_FILE"
+    else
+        printf '%q ' swaybg -i "$file" -m fill >> "$STATE_FILE"
+    fi
+    printf '\n' >> "$STATE_FILE"
+    chmod 0755 "$STATE_FILE"
+}
+
+apply_wallpaper() {
+    local file="$1" palette_source renderer="swaybg" rendered_file
+    palette_source="$(palette_source_for "$file")"
+    rendered_file="$palette_source"
+
+    # A manual selection replaces either existing renderer. Killing a missing
+    # process is harmless and avoids two renderers competing for the output.
+    killall swaybg 2>/dev/null || true
+    killall mpvpaper 2>/dev/null || true
+
+    if is_live_media "$file" && command -v mpvpaper &>/dev/null; then
+        mpvpaper -o "$MPVPAPER_OPTIONS" '*' "$file" &
+        renderer="mpvpaper"
+        rendered_file="$file"
+        notify-send "Icarus live wallpaper" "$(basename "$file")" 2>/dev/null || true
+    else
+        swaybg -i "$palette_source" -m fill &
+        if is_live_media "$file"; then
+            notify-send "Icarus wallpaper" "mpvpaper is unavailable; using the static companion image." 2>/dev/null || true
+        fi
+    fi
+
+    write_state "$renderer" "$rendered_file"
+    icarus-palette "$palette_source"
+    killall -SIGUSR2 waybar 2>/dev/null || true
+    eww reload 2>/dev/null || true
+}
+
+choose_random_icarus_scene() {
+    local -a scenes=()
+    local file
+    shopt -s nullglob
+    for file in "$WALLPAPER_DIR"/icarus-*.png "$WALLPAPER_DIR"/icarus-*-live.gif "$WALLPAPER_DIR"/icarus-*-live.mp4; do
+        [[ -f "$file" ]] && scenes+=("$file")
+    done
+    shopt -u nullglob
+
+    (( ${#scenes[@]} > 0 )) || { echo "No original Icarus scenes found." >&2; exit 1; }
+    printf '%s\n' "${scenes[@]}" | shuf -n 1
+}
+
+if [[ "${1:-}" == "--set" ]]; then
+    [[ $# -eq 2 && "$2" != */* ]] || { usage >&2; exit 2; }
+    selected="$2"
+elif [[ "${1:-}" == "--random" ]]; then
+    selected="$(basename "$(choose_random_icarus_scene)")"
+elif [[ -n "${1:-}" ]]; then
+    usage >&2
+    exit 2
+else
+    menu_items=""
+    for file in "$WALLPAPER_DIR"/*; do
+        if [[ -f "$file" ]]; then
+            filename=$(basename "$file")
+            menu_items+="${filename}\0icon\x1f${file}\n"
+        fi
+    done
+
+    selected=$(echo -en "$menu_items" | rofi -dmenu -i -replace -config ~/.config/rofi/wallpaper.rasi -p "Select Wallpaper" || true)
+fi
 
 if [[ -n "$selected" ]]; then
     full_path="$WALLPAPER_DIR/$selected"
-
     if [[ -f "$full_path" ]]; then
-        # Kill whichever wallpaper renderer is currently active — a manual
-        # selection here always means "switch to this static image", so
-        # both the live (mpvpaper) and static (swaybg) paths need clearing
-        # first, not just swaybg. Killing a process that isn't running is
-        # a harmless no-op either way.
-        killall swaybg 2>/dev/null
-        killall mpvpaper 2>/dev/null
-
-        swaybg -i "$full_path" -m fill &
-
-        mkdir -p ~/.config/icarus
-        echo "swaybg -i \"$full_path\" -m fill &" > ~/.config/icarus/wallpaper.sh
-        chmod +x ~/.config/icarus/wallpaper.sh
-
-        icarus-palette "$full_path"
-
-        killall -SIGUSR2 waybar 2>/dev/null
-        eww reload 2>/dev/null || true
+        apply_wallpaper "$full_path"
+    else
+        notify-send "Wallpaper switcher" "Wallpaper not found: $selected" 2>/dev/null || true
+        exit 1
     fi
 fi

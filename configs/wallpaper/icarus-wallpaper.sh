@@ -10,6 +10,14 @@
 #
 LIVE_VIDEO="/usr/share/backgrounds/icarus/icarus-midnight-live.mp4"
 STATIC_IMG="/usr/share/backgrounds/icarus/icarus-midnight.png"
+STATE_FILE="${HOME}/.config/icarus/wallpaper.sh"
+
+# A manual selection made with icarus-wallpaper-switch survives logout and
+# reboot. The state script holds either a swaybg or mpvpaper command with the
+# chosen path shell-escaped; execute it before falling back to the default.
+if [[ -x "$STATE_FILE" ]]; then
+    exec "$STATE_FILE"
+fi
 
 if command -v mpvpaper &>/dev/null && [[ -f "$LIVE_VIDEO" ]]; then
     # Run palette generation in the background so it doesn't block startup

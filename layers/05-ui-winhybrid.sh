@@ -33,6 +33,11 @@ log "Installing screenshot, clipboard, and brightness tools..."
 pacman -S --noconfirm --needed \
     wl-clipboard cliphist brightnessctl playerctl
 
+log "Installing dashboard connectivity controls..."
+pacman -S --noconfirm --needed \
+    network-manager-applet bluez bluez-utils blueman curl jq
+systemctl enable bluetooth.service
+
 log "Installing terminal extras and system info..."
 pacman -S --noconfirm --needed \
     fastfetch cava pavucontrol python python-pillow
@@ -85,6 +90,7 @@ require_config "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" /etc/skel/.conf
 require_config "${ICARUS_REPO_PATH}/configs/waybar/style.css" /etc/skel/.config/waybar/style.css
 require_config "${ICARUS_REPO_PATH}/configs/dunst/dunstrc" /etc/skel/.config/dunst/dunstrc
 require_config "${ICARUS_REPO_PATH}/configs/kitty/kitty.conf" /etc/skel/.config/kitty/kitty.conf
+require_config "${ICARUS_REPO_PATH}/configs/kitty/colors.conf" /etc/skel/.config/kitty/colors.conf
 [[ -f "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" ]] && cp "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" /etc/skel/.config/kitty/open-actions.conf
 require_config "${ICARUS_REPO_PATH}/configs/wlogout/layout" /etc/skel/.config/wlogout/layout
 require_config "${ICARUS_REPO_PATH}/configs/wlogout/style.css" /etc/skel/.config/wlogout/style.css
@@ -117,6 +123,9 @@ else
 fi
 if [[ -d "${ICARUS_REPO_PATH}/configs/rofi" ]]; then
     cp -r "${ICARUS_REPO_PATH}/configs/rofi/"* /etc/skel/.config/rofi/
+    if [[ -f "${ICARUS_REPO_PATH}/configs/rofi/icarus-powermenu-entries.sh" ]]; then
+        install -m 0755 "${ICARUS_REPO_PATH}/configs/rofi/icarus-powermenu-entries.sh" /usr/local/bin/icarus-powermenu-entries
+    fi
 else
     fatal "Missing configs/rofi/ in repo payload."
 fi
