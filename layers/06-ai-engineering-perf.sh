@@ -43,6 +43,12 @@ try_install() {
     fi
 }
 
+if pacman -Qq cachyos-keyring &>/dev/null; then
+    log "CachyOS detected: Installing CachyOS-specific system optimizations..."
+    try_install cachyos-settings ananicy-cpp
+    systemctl enable ananicy-cpp.service 2>/dev/null || true
+fi
+
 # ---------------------------------------------------------------------------
 # 1. iGPU compute runtime — this is what actually exposes the Iris Xe to
 #    anything beyond display/video decode. Without this, OpenVINO/PyTorch

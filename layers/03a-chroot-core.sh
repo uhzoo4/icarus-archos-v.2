@@ -104,8 +104,19 @@ visudo -c -f /etc/sudoers.d/wheel || fatal "Generated sudoers file failed valida
 # ---------------------------------------------------------------------------
 # Stock kernel (the guaranteed-boot fallback)
 # ---------------------------------------------------------------------------
+IS_CACHYOS=0
+if pacman -Qq cachyos-keyring &>/dev/null; then
+    IS_CACHYOS=1
+fi
+
 log "Installing stock kernel..."
-pacman -S --noconfirm --needed linux linux-headers
+if [[ $IS_CACHYOS -eq 1 ]]; then
+    KERNEL_PKG="linux-cachyos"
+    pacman -S --noconfirm --needed linux-cachyos linux-cachyos-headers
+else
+    KERNEL_PKG="linux"
+    pacman -S --noconfirm --needed linux linux-headers
+fi
 
 # ---------------------------------------------------------------------------
 # GPU generation detection for Early KMS module ordering.
@@ -181,9 +192,9 @@ fi
 mkdir -p /boot/loader/entries
 cat > /boot/loader/entries/icarus-fallback.conf <<EOF
 title Icarus-ArchOS (Fallback, stock kernel)
-linux /vmlinuz-linux
+linux /vmlinuz-${KERNEL_PKG}
 initrd /intel-ucode.img
-initrd /initramfs-linux.img
+initrd /initramfs-${KERNEL_PKG}.img
 options ${KERNEL_OPTS}
 EOF
 

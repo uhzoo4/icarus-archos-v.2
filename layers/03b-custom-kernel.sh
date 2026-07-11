@@ -46,6 +46,11 @@ done
 
 [[ -f "$PREV_SENTINEL" ]] || warn_and_exit_gracefully "Layer 3a sentinel not found. Skipping custom kernel build."
 
+if pacman -Qq cachyos-keyring &>/dev/null; then
+    echo "[layer-3b] CachyOS detected. CachyOS provides highly optimized kernels by default."
+    warn_and_exit_gracefully "Skipping custom linux-icarus kernel build."
+fi
+
 if ! curl -s --max-time 5 -o /dev/null https://geo.mirror.pkgbuild.com; then
     warn_and_exit_gracefully "No internet access detected inside chroot. Skipping custom kernel build."
 fi

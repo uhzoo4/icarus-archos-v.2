@@ -64,6 +64,7 @@ if [[ $IS_CACHYOS -eq 1 ]]; then
     pacman-key --init
     pacman-key --populate archlinux cachyos
     pacman -Sy --noconfirm cachyos-keyring cachyos-mirrorlist || log "WARNING: could not refresh CachyOS keyring — continuing with what the live ISO shipped."
+    EXTRA_PKGS="cachyos-keyring cachyos-mirrorlist"
 else
     # Force rock-solid global CDN mirrors for vanilla Arch
     cat > /etc/pacman.d/mirrorlist << 'EOF'
@@ -73,13 +74,15 @@ EOF
     pacman-key --init
     pacman-key --populate archlinux
     pacman -Sy --noconfirm archlinux-keyring
+    EXTRA_PKGS=""
 fi
 
 log "Running pacstrap..."
+# shellcheck disable=SC2086
 pacstrap -K /mnt \
     base base-devel linux-firmware intel-ucode btrfs-progs \
     git vim nano networkmanager sudo zram-generator \
-    mesa vulkan-intel intel-media-driver
+    mesa vulkan-intel intel-media-driver $EXTRA_PKGS
 
 log "Generating fstab (subvolume-aware, since /mnt is already mounted with the target's subvol options)..."
 genfstab -U /mnt > /mnt/etc/fstab

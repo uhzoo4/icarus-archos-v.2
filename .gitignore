@@ -1,2 +1,4 @@
 /STEAL/
 __pycache__/
+.env
+*.env
