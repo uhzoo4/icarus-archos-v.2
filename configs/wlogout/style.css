@@ -3,7 +3,7 @@
    transitions. Inspired by Qylock Nothing's circular action buttons
    and KDE blur patterns, reimagined for GTK/wlogout rendering. */
 
-@import url("../icarus/theme/colors.css");
+@import url("../theme/colors.css");
 
 * {
     font-family: "JetBrains Mono Nerd Font", monospace;
