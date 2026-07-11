@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install ShellCheck
-        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+      - name: Install ShellCheck & Ripgrep
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck ripgrep
       - name: Validate installer contracts
         run: bash scripts/verify-repo.sh
