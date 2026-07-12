@@ -34,9 +34,10 @@ sudo pacman -S --needed --noconfirm \
     hyprlock hypridle wlogout wl-clipboard cliphist \
     brightnessctl playerctl fastfetch cava pavucontrol \
     jq pamixer libnotify sassc ffmpeg socat \
-    starship eza bat zoxide fzf ripgrep fd gum
+    starship eza bat zoxide fzf ripgrep fd gum \
+    nemo nwg-look swaync fuzzel wlsunset wmenu wget
 
-# Detect AUR helper and install AUR-only dependencies
+# Detect AUR helper and install AUR-only dependencies (including macOS theme tools and extra apps)
 AUR_HELPER=""
 if command -v paru &>/dev/null; then
     AUR_HELPER="paru"
@@ -46,9 +47,12 @@ fi
 
 if [[ -n "$AUR_HELPER" ]]; then
     info "Detected AUR helper: ${AUR_HELPER}. Installing AUR dependencies..."
-    $AUR_HELPER -S --noconfirm --needed eww-wayland adw-gtk-theme bibata-cursor-theme || true
+    $AUR_HELPER -S --noconfirm --needed \
+        eww-wayland adw-gtk-theme bibata-cursor-theme \
+        swayosd-git wl-clip-persist xfce-polkit waypaper \
+        helium-browser-bin discord spotify || true
 else
-    warn "No AUR helper (paru/yay) detected. AUR packages (eww-wayland, adw-gtk-theme, bibata-cursor-theme) were skipped. Please install them manually."
+    warn "No AUR helper (paru/yay) detected. AUR packages (eww-wayland, adw-gtk-theme, bibata-cursor-theme, swayosd-git, wl-clip-persist, xfce-polkit, waypaper, helium-browser-bin, discord, spotify) were skipped. Please install them manually."
 fi
 ok "System and AUR dependencies installed."
 
@@ -61,33 +65,40 @@ sudo cp "${REPO_PATH}/tools/icarus-palette.py" /usr/local/bin/icarus-palette
 sudo chmod +x /usr/local/bin/icarus-wallpaper* /usr/local/bin/icarus-palette
 ok "Scripts installed to /usr/local/bin/."
 
-step "3. Compiling and installing Archos themes & Mew cursor"
-# Archos GTK Theme
+step "3. Compiling and installing Archos & WhiteSur themes"
+# GTK Themes compilation (both Archos-Dark and original WhiteSur-Dark)
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" ]]; then
     info "Compiling Archos GTK Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode )
-    ok "Archos GTK theme compiled and installed."
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode || true )
+    info "Compiling original WhiteSur GTK Theme..."
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n WhiteSur --silent-mode || true )
+    ok "GTK themes compiled and installed."
 else
-    warn "Archos GTK theme source not found."
+    warn "GTK theme source not found."
 fi
 
-# Archos Icon Theme
+# Icon Themes installation (both Archos-dark and original WhiteSur-dark)
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-icon-theme" ]]; then
     info "Installing Archos Icon Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n Archos -t all )
-    ok "Archos icon theme installed."
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n Archos -t all || true )
+    info "Installing original WhiteSur Icon Theme..."
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n WhiteSur -t all || true )
+    ok "Icon themes installed."
 else
-    warn "Archos icon theme source not found."
+    warn "Icon theme source not found."
 fi
 
-# Archos Cursors
+# Cursors installation (both Archos-cursors and original WhiteSur-cursors)
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-cursors" ]]; then
     info "Installing Archos Cursors..."
     sudo mkdir -p /usr/share/icons/Archos-cursors
     sudo cp -pr "${REPO_PATH}/pkgs/themes/Archos-cursors/dist/." /usr/share/icons/Archos-cursors/
-    ok "Archos cursors installed."
+    info "Installing original WhiteSur Cursors..."
+    sudo mkdir -p /usr/share/icons/WhiteSur-cursors
+    sudo cp -pr "${REPO_PATH}/pkgs/themes/Archos-cursors/dist/." /usr/share/icons/WhiteSur-cursors/
+    ok "Cursor themes installed."
 else
-    warn "Archos cursors source not found."
+    warn "Cursor themes source not found."
 fi
 
 # Aura Mew Cursor
@@ -104,6 +115,14 @@ step "4. Copying and caching new wallpapers"
 sudo mkdir -p /usr/share/backgrounds/icarus/references
 if [[ -d "${REPO_PATH}/configs/wallpaper/references" ]]; then
     sudo cp -rn "${REPO_PATH}/configs/wallpaper/references/." /usr/share/backgrounds/icarus/references/
+fi
+if [[ -d "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main" ]]; then
+    info "Copying WhiteSur dynamic wallpapers..."
+    for W_DIR in 1080p 2k 4k src; do
+        if [[ -d "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main/${W_DIR}" ]]; then
+            sudo cp -rn "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main/${W_DIR}/." /usr/share/backgrounds/icarus/references/ || true
+        fi
+    done
 fi
 ok "Wallpapers integrated into references."
 
