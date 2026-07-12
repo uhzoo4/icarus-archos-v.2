@@ -216,6 +216,20 @@ if [[ -n "$APPS" ]]; then
     gum style --foreground 212 "Apps installed!"
 fi
 
+if [[ -d "/usr/share/archos/firefox-theme" ]]; then
+    if gum confirm "Would you like to apply the macOS theme to Firefox?"; then
+        echo "Launching Firefox briefly to initialize default profile..."
+        firefox &
+        FIREFOX_PID=$!
+        sleep 4
+        kill $FIREFOX_PID || true
+        sleep 1
+        echo "Installing Firefox Theme..."
+        /usr/share/archos/firefox-theme/install.sh
+        gum style --foreground 212 "Firefox theme applied!"
+    fi
+fi
+
 gum style "All set! Press SUPER+Space for your launcher, or SUPER+W to cycle wallpapers."
 echo "Press any key to exit."
 read -n 1

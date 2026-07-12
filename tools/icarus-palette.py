@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import subprocess
 import colorsys
 import argparse
 from pathlib import Path
@@ -226,6 +227,34 @@ def update_cava(cava_path, accent_rgb):
     with open(cava_path, 'w') as f:
         f.writelines(lines)
 
+def extract_video_frame(video_path):
+    temp_frame = "/tmp/icarus-video-frame.png"
+    os.makedirs("/tmp", exist_ok=True)
+    if os.path.exists(temp_frame):
+        try:
+            os.remove(temp_frame)
+        except OSError:
+            pass
+    
+    cmd = [
+        "ffmpeg", "-y", "-i", str(video_path), 
+        "-ss", "00:00:01", "-vframes", 1, 
+        "-f", "image2", temp_frame
+    ]
+    try:
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    except subprocess.CalledProcessError:
+        cmd_fallback = [
+            "ffmpeg", "-y", "-i", str(video_path),
+            "-vframes", 1, "-f", "image2", temp_frame
+        ]
+        try:
+            subprocess.run(cmd_fallback, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        except subprocess.CalledProcessError:
+            print("Warning: ffmpeg failed to extract frame from video. Using default static.")
+            return None
+    return temp_frame
+
 def main():
     parser = argparse.ArgumentParser(description="Icarus Dynamic Palette Generator")
     parser.add_argument("image", help="Path to the wallpaper image")
@@ -235,8 +264,25 @@ def main():
         print(f"Error: {args.image} not found.")
         sys.exit(1)
         
-    print(f"Extracting vibrant colors from {args.image}...")
-    accent_rgb = get_vibrant_color(args.image)
+    image_path = args.image
+    _, ext = os.path.splitext(image_path.lower())
+    if ext in ('.mp4', '.webm', '.mkv'):
+        print(f"Detected video wallpaper: {image_path}. Extracting representative frame...")
+        extracted = extract_video_frame(image_path)
+        if extracted:
+            image_path = extracted
+        else:
+            image_path = "/usr/share/backgrounds/icarus/icarus-midnight.png"
+            if not os.path.exists(image_path):
+                print("Warning: default static wallpaper not found.")
+                
+    print(f"Extracting vibrant colors from {image_path}...")
+    try:
+        accent_rgb = get_vibrant_color(image_path)
+    except Exception as e:
+        print(f"Error reading image {image_path}: {e}. Using fallback color.")
+        accent_rgb = (74, 109, 140)
+        
     generate_theme_files(accent_rgb)
     
     print("Icarus palette updated successfully.")

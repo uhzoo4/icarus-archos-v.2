@@ -23,7 +23,8 @@ pacman -S --noconfirm --needed \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
     qt5-wayland qt6-wayland xdg-desktop-portal-hyprland polkit-kde-agent \
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp \
-    sddm qt6-5compat qt6-declarative qt6-svg qt6-multimedia-ffmpeg papirus-icon-theme
+    sddm qt6-5compat qt6-declarative qt6-svg qt6-multimedia-ffmpeg papirus-icon-theme \
+    ffmpeg socat
 
 log "Installing lock screen, idle management, and power menu..."
 pacman -S --noconfirm --needed \
@@ -172,6 +173,13 @@ else
     fatal "Missing configs/wallpaper/switcher.sh in repo payload."
 fi
 
+if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/daemon.sh" ]]; then
+    log "Installing wallpaper pause daemon..."
+    install -m 0755 "${ICARUS_REPO_PATH}/configs/wallpaper/daemon.sh" /usr/local/bin/icarus-wallpaper-daemon
+else
+    fatal "Missing configs/wallpaper/daemon.sh in repo payload."
+fi
+
 if [[ -d "${ICARUS_REPO_PATH}/configs/wallpaper/references" ]]; then
     mkdir -p /usr/share/backgrounds/icarus/references
     cp -r "${ICARUS_REPO_PATH}/configs/wallpaper/references/"* /usr/share/backgrounds/icarus/references/
@@ -182,7 +190,6 @@ fi
 # Automatically hunt for and extract wallpapers from the STEAL folder
 if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted" ]]; then
     log "Hunting for stolen wallpapers in STEAL folder..."
-    # Find all images larger than 200KB (to filter out random icons/UI elements) and copy them in
     find "${ICARUS_REPO_PATH}/STEAL/_extracted" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +200k -exec cp -n {} /usr/share/backgrounds/icarus/references/ \;
     log "Stolen wallpapers successfully integrated."
 fi
@@ -203,21 +210,52 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# GTK theme/icon/cursor settings. Papirus-Dark is installed above (official
-# repo). adw-gtk3-dark and Bibata-Modern-Ice are AUR-only and installed by
-# Layer 7 once paru exists — referencing their names here is safe regardless
-# of install order, since nothing reads settings.ini until first login,
-# which happens after every layer has finished.
+# Compile and install custom cursors, icons, and GTK theme from EXTRA folder
 # ---------------------------------------------------------------------------
+# Install Archos-cursors
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/themes/Archos-cursors" ]]; then
+    log "Installing Archos cursor theme..."
+    mkdir -p /usr/share/icons/Archos-cursors
+    cp -pr "${ICARUS_REPO_PATH}/pkgs/themes/Archos-cursors/dist/." /usr/share/icons/Archos-cursors/
+fi
+
+# Install Aura-Mew-Cursor
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/themes/Aura-Mew-Cursor" ]]; then
+    log "Installing Aura Mew cursor theme..."
+    mkdir -p /usr/share/icons/Aura-Mew-Cursor
+    cp -pr "${ICARUS_REPO_PATH}/pkgs/themes/Aura-Mew-Cursor/." /usr/share/icons/Aura-Mew-Cursor/
+fi
+
+# Compile and install GTK Theme as Archos-Dark
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/themes/Archos-gtk-theme" ]]; then
+    log "Installing sassc dependency for GTK theme compilation..."
+    pacman -S --noconfirm --needed sassc
+    log "Compiling and installing Archos GTK Theme..."
+    ( cd "${ICARUS_REPO_PATH}/pkgs/themes/Archos-gtk-theme" && ./install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode || true )
+fi
+
+# Install Icon Theme as Archos
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/themes/Archos-icon-theme" ]]; then
+    log "Installing Archos Icon Theme..."
+    ( cd "${ICARUS_REPO_PATH}/pkgs/themes/Archos-icon-theme" && ./install.sh -d /usr/share/icons -n Archos -t all || true )
+fi
+
+# Cache Firefox theme under /usr/share/archos/ for onboarding welcome script
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/themes/Archos-firefox-theme" ]]; then
+    log "Caching Archos Firefox Theme..."
+    mkdir -p /usr/share/archos
+    cp -r "${ICARUS_REPO_PATH}/pkgs/themes/Archos-firefox-theme" /usr/share/archos/firefox-theme
+fi
+
 log "Writing GTK theme settings..."
 mkdir -p /etc/skel/.config/gtk-3.0 /etc/skel/.config/gtk-4.0
 for GTK_DIR in gtk-3.0 gtk-4.0; do
 cat > "/etc/skel/.config/${GTK_DIR}/settings.ini" << 'EOF'
 [Settings]
-gtk-theme-name=adw-gtk3-dark
-gtk-icon-theme-name=Papirus-Dark
-gtk-cursor-theme-name=Bibata-Modern-Ice
-gtk-cursor-theme-size=22
+gtk-theme-name=Archos-Dark
+gtk-icon-theme-name=Archos-dark
+gtk-cursor-theme-name=Archos-cursors
+gtk-cursor-theme-size=24
 gtk-application-prefer-dark-theme=1
 EOF
 # NOTE: exactly one ".." here, not two — this file lives at

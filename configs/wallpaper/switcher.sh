@@ -10,7 +10,7 @@ set -euo pipefail
 WALLPAPER_DIR="/usr/share/backgrounds/icarus/references"
 DEFAULT_STATIC="/usr/share/backgrounds/icarus/icarus-midnight.png"
 STATE_FILE="${HOME}/.config/icarus/wallpaper.sh"
-MPVPAPER_OPTIONS="no-audio --loop-file=inf --hwdec=auto-copy --panscan=1.0"
+MPVPAPER_OPTIONS="no-audio --loop-file=inf --hwdec=auto-copy --panscan=1.0 --input-ipc-server=/tmp/mpvpaper-socket"
 
 usage() {
     cat <<'EOF'
@@ -48,6 +48,11 @@ palette_source_for() {
             return 0
         fi
     done
+
+    if is_live_media "$file"; then
+        printf '%s\n' "$file"
+        return 0
+    fi
 
     printf '%s\n' "$DEFAULT_STATIC"
 }
