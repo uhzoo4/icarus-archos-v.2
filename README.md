@@ -28,7 +28,7 @@
 
 ### 🌌 The Experience (Cinematic Animations)
 <div align="center">
-  <img src="configs/wallpaper/references/icarus-redshift-relay-live.gif" width="48%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
+  <img src="configs/wallpaper/references/icarus-frozen-signal-live.gif" width="48%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
   <img src="configs/wallpaper/references/icarus-event-horizon-live.gif" width="48%" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);" />
 </div>
 
