@@ -31,6 +31,12 @@ Icarus-ArchOS is not just a configuration file—it is a **fully weaponized, aut
 
 We took the absolute best components of **Awesome-Omarchy**, **SDDM Astronaut**, and **Qylock**, reverse-engineered their animations and optimizations, and hardcoded them directly into the native Hyprland ecosystem. The result is a desktop that looks and feels like it belongs in the year 2077.
 
+### 🌌 The Experience (Animated)
+<div align="center">
+  <img src="configs/wallpaper/references/icarus-redshift-relay-live.gif" width="48%" />
+  <img src="configs/wallpaper/references/icarus-event-horizon-live.gif" width="48%" />
+</div>
+
 ### 🔥 Peak Features
 - **SDDM Astronaut Login**: Replaced the terminal login with a butter-smooth, hardware-accelerated Qt6 login screen.
 - **Cyber-Industrial Boot Splash**: The OEM boot logo is obliterated, replaced by a glowing Plymouth `circuit` animation.
