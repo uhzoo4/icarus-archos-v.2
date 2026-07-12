@@ -28,7 +28,7 @@ pacman -S --noconfirm --needed \
 
 log "Installing lock screen, idle management, and power menu..."
 pacman -S --noconfirm --needed \
-    hyprlock hypridle 
+    hyprlock hypridle wlogout
 
 log "Installing screenshot, clipboard, and brightness tools..."
 pacman -S --noconfirm --needed \

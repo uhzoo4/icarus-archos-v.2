@@ -28,7 +28,7 @@ if [[ ! -f "${REPO_PATH}/icarus-assemble.sh" ]]; then
 fi
 
 step "1. Installing system dependencies"
-sudo pacman -S --needed --noconfirm sassc ffmpeg socat
+sudo pacman -S --needed --noconfirm sassc ffmpeg socat wlogout
 ok "System dependencies installed."
 
 step "2. Copying Icarus wallpaper scripts & dynamic palette generator"
@@ -105,6 +105,39 @@ gtk-application-prefer-dark-theme=1
 EOF
 cp "${HOME}/.config/gtk-3.0/settings.ini" "${HOME}/.config/gtk-4.0/settings.ini"
 ok "User GTK parameters written."
+
+step "6b. Copying user configurations (hypr, waybar, kitty, rofi, dunst, fastfetch, cava, wlogout, eww)"
+mkdir -p "${HOME}/.config"
+for CFG_DIR in hypr waybar kitty rofi dunst fastfetch cava wlogout eww; do
+    if [[ -d "${REPO_PATH}/configs/${CFG_DIR}" ]]; then
+        info "Copying ${CFG_DIR} configuration..."
+        # Backup existing config if it's not a symlink and already exists
+        if [[ -d "${HOME}/.config/${CFG_DIR}" && ! -L "${HOME}/.config/${CFG_DIR}" ]]; then
+            mv "${HOME}/.config/${CFG_DIR}" "${HOME}/.config/${CFG_DIR}.bak.$(date +%s)" || true
+        fi
+        mkdir -p "${HOME}/.config/${CFG_DIR}"
+        cp -r "${REPO_PATH}/configs/${CFG_DIR}/." "${HOME}/.config/${CFG_DIR}/"
+    fi
+done
+
+# Ensure all scripts are executable
+chmod +x "${HOME}/.config/hypr/scripts/"* 2>/dev/null || true
+[[ -d "${HOME}/.config/eww/scripts" ]] && chmod +x "${HOME}/.config/eww/scripts/"*.sh 2>/dev/null || true
+if [[ -f "${HOME}/.config/rofi/icarus-powermenu-entries.sh" ]]; then
+    chmod +x "${HOME}/.config/rofi/icarus-powermenu-entries.sh"
+fi
+
+# Copy theme defaults into the custom config layout (~/.config/icarus/theme)
+if [[ -d "${REPO_PATH}/configs/theme" ]]; then
+    info "Copying theme configurations..."
+    if [[ -d "${HOME}/.config/icarus/theme" && ! -L "${HOME}/.config/icarus/theme" ]]; then
+        mv "${HOME}/.config/icarus/theme" "${HOME}/.config/icarus/theme.bak.$(date +%s)" || true
+    fi
+    mkdir -p "${HOME}/.config/icarus/theme"
+    cp -r "${REPO_PATH}/configs/theme/." "${HOME}/.config/icarus/theme/"
+fi
+
+ok "User configurations successfully updated and copied to ~/.config/."
 
 step "7. Restarting wallpaper daemon services"
 killall icarus-wallpaper-daemon mpvpaper swaybg 2>/dev/null || true
