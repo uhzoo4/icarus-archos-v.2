@@ -13,12 +13,12 @@
 
 @import url("../icarus/theme/colors.css");
 
-@define-color bgHover      rgba(154, 160, 166, 0.08);
-@define-color borderFaint  rgba(154, 160, 166, 0.14);
-@define-color textDim      rgba(199, 202, 205, 0.45);
-@define-color accentAmber  #E8A94D;
-@define-color accentRed    #C96B6B;
-@define-color accentGreen  #7D9E82;
+@define-color bgHover rgba(154, 160, 166, 0.08);
+@define-color borderFaint rgba(154, 160, 166, 0.14);
+@define-color textDim rgba(199, 202, 205, 0.45);
+@define-color accentAmber #E8A94D;
+@define-color accentRed #C96B6B;
+@define-color accentGreen #7D9E82;
 
 window#waybar {
     background: @bgBase;
@@ -105,11 +105,19 @@ tooltip label {
 }
 
 /* --- Status modules: dimmed by default, brighten on hover --- */
-#cpu, #memory, #network, #pulseaudio, #backlight {
+#cpu,
+#memory,
+#network,
+#pulseaudio,
+#backlight {
     color: @textDim;
 }
 
-#cpu:hover, #memory:hover, #network:hover, #pulseaudio:hover, #backlight:hover {
+#cpu:hover,
+#memory:hover,
+#network:hover,
+#pulseaudio:hover,
+#backlight:hover {
     color: @textPrimary;
 }
 
@@ -132,8 +140,15 @@ tooltip label {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* --- Idle inhibitor: ice-blue when active --- */
@@ -160,10 +175,10 @@ tooltip label {
     padding: 0 10px;
 }
 
-#tray > .passive {
+#tray>.passive {
     -gtk-icon-effect: dim;
 }
 
-#tray > .needs-attention {
+#tray>.needs-attention {
     -gtk-icon-effect: highlight;
 }

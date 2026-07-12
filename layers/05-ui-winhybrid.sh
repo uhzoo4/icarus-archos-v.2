@@ -27,7 +27,7 @@ pacman -S --noconfirm --needed \
 
 log "Installing lock screen, idle management, and power menu..."
 pacman -S --noconfirm --needed \
-    hyprlock hypridle wlogout
+    hyprlock hypridle 
 
 log "Installing screenshot, clipboard, and brightness tools..."
 pacman -S --noconfirm --needed \
@@ -44,11 +44,11 @@ pacman -S --noconfirm --needed \
 
 log "Installing Wine / Windows-app compatibility stack..."
 pacman -S --noconfirm --needed \
-    wine-staging winetricks bottles \
+    wine-staging winetricks  \
     giflib lib32-giflib libpng lib32-libpng \
     libldap lib32-libldap gnutls lib32-gnutls \
     mpg123 lib32-mpg123 openal lib32-openal \
-    v4l-utils lib32-v4l-utils libclc lib32-libclc \
+    v4l-utils lib32-v4l-utils libclc  \
     libxkbcommon lib32-libxkbcommon
 
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ EOF
 # in Layer 3a before this skeleton existed.
 # ---------------------------------------------------------------------------
 log "Installing config skeletons..."
-mkdir -p /etc/skel/.config/{hypr,waybar,rofi,dunst,kitty,wlogout,fastfetch,cava,eww,icarus/theme}
+mkdir -p /etc/skel/.config/{hypr,waybar,rofi,dunst,kitty,,fastfetch,cava,eww,icarus/theme}
 
 require_config() {
     local src="$1" dst="$2"
@@ -86,12 +86,23 @@ require_config() {
 require_config "${ICARUS_REPO_PATH}/configs/hypr/hyprland.conf" /etc/skel/.config/hypr/hyprland.conf
 require_config "${ICARUS_REPO_PATH}/configs/hypr/hyprlock.conf" /etc/skel/.config/hypr/hyprlock.conf
 require_config "${ICARUS_REPO_PATH}/configs/hypr/hypridle.conf" /etc/skel/.config/hypr/hypridle.conf
+
+# Install Icarus custom scripts
+log "Installing Icarus custom utility scripts..."
+mkdir -p /etc/skel/.config/hypr/scripts
+if [[ -d "${ICARUS_REPO_PATH}/configs/hypr/scripts" ]]; then
+    cp -r "${ICARUS_REPO_PATH}/configs/hypr/scripts/." /etc/skel/.config/hypr/scripts/
+    chmod +x /etc/skel/.config/hypr/scripts/*
+else
+    fatal "Missing configs/hypr/scripts/ in repo payload."
+fi
 require_config "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" /etc/skel/.config/waybar/config.jsonc
 require_config "${ICARUS_REPO_PATH}/configs/waybar/style.css" /etc/skel/.config/waybar/style.css
 require_config "${ICARUS_REPO_PATH}/configs/dunst/dunstrc" /etc/skel/.config/dunst/dunstrc
 require_config "${ICARUS_REPO_PATH}/configs/kitty/kitty.conf" /etc/skel/.config/kitty/kitty.conf
 require_config "${ICARUS_REPO_PATH}/configs/kitty/colors.conf" /etc/skel/.config/kitty/colors.conf
 [[ -f "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" ]] && cp "${ICARUS_REPO_PATH}/configs/kitty/open-actions.conf" /etc/skel/.config/kitty/open-actions.conf
+mkdir -p /etc/skel/.config/wlogout
 require_config "${ICARUS_REPO_PATH}/configs/wlogout/layout" /etc/skel/.config/wlogout/layout
 require_config "${ICARUS_REPO_PATH}/configs/wlogout/style.css" /etc/skel/.config/wlogout/style.css
 [[ -d "${ICARUS_REPO_PATH}/configs/wlogout/icons" ]] && cp -r "${ICARUS_REPO_PATH}/configs/wlogout/icons" /etc/skel/.config/wlogout/

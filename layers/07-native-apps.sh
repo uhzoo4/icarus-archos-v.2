@@ -82,7 +82,7 @@ EOF
 #    Rust toolchain just to get the helper itself running.
 # ---------------------------------------------------------------------------
 log "Bootstrapping paru (AUR helper)..."
-try_install base-devel git
+try_install base-devel git rust acpi lm_sensors
 AUR_OK=0
 if ! command -v paru &>/dev/null; then
     BUILD_DIR="/home/icarus/.cache/icarus-aur-bootstrap"
@@ -90,12 +90,12 @@ if ! command -v paru &>/dev/null; then
     if sudo -u icarus bash -c "
         set -e
         cd '${BUILD_DIR}'
-        [[ -d paru-bin ]] || git clone https://aur.archlinux.org/paru-bin.git
-        cd paru-bin
+        [[ -d paru ]] || git clone https://aur.archlinux.org/paru.git
+        cd paru
         git pull
         makepkg -sf --noconfirm
     "; then
-        PKG_FILE=$(find "${BUILD_DIR}/paru-bin" -maxdepth 1 -name '*.pkg.tar.zst' | head -1)
+        PKG_FILE=$(find "${BUILD_DIR}/paru" -maxdepth 1 -name '*.pkg.tar.zst' | head -1)
         if [[ -n "$PKG_FILE" ]] && pacman -U --noconfirm "$PKG_FILE"; then
             AUR_OK=1
             log "paru installed."

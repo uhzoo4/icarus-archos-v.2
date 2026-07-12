@@ -100,23 +100,12 @@ mkdir -p /etc/sudoers.d
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 chmod 0440 /etc/sudoers.d/wheel
 visudo -c -f /etc/sudoers.d/wheel || fatal "Generated sudoers file failed validation."
-
 # ---------------------------------------------------------------------------
 # Stock kernel (the guaranteed-boot fallback)
 # ---------------------------------------------------------------------------
-IS_CACHYOS=0
-if pacman -Qq cachyos-keyring &>/dev/null; then
-    IS_CACHYOS=1
-fi
-
-log "Installing stock kernel..."
-if [[ $IS_CACHYOS -eq 1 ]]; then
-    KERNEL_PKG="linux-cachyos"
-    pacman -S --noconfirm --needed linux-cachyos linux-cachyos-headers
-else
-    KERNEL_PKG="linux"
-    pacman -S --noconfirm --needed linux linux-headers
-fi
+log "Installing stock kernel standard"
+KERNEL_PKG="linux"
+pacman -S --noconfirm --needed linux linux-headers
 
 # ---------------------------------------------------------------------------
 # GPU generation detection for Early KMS module ordering.
