@@ -28,8 +28,29 @@ if [[ ! -f "${REPO_PATH}/icarus-assemble.sh" ]]; then
 fi
 
 step "1. Installing system dependencies"
-sudo pacman -S --needed --noconfirm sassc ffmpeg socat wlogout
-ok "System dependencies installed."
+info "Installing core desktop applications and utilities..."
+sudo pacman -S --needed --noconfirm \
+    hyprland waybar rofi-wayland kitty dolphin dunst swaybg \
+    hyprlock hypridle wlogout wl-clipboard cliphist \
+    brightnessctl playerctl fastfetch cava pavucontrol \
+    jq pamixer libnotify sassc ffmpeg socat \
+    starship eza bat zoxide fzf ripgrep fd gum
+
+# Detect AUR helper and install AUR-only dependencies
+AUR_HELPER=""
+if command -v paru &>/dev/null; then
+    AUR_HELPER="paru"
+elif command -v yay &>/dev/null; then
+    AUR_HELPER="yay"
+fi
+
+if [[ -n "$AUR_HELPER" ]]; then
+    info "Detected AUR helper: ${AUR_HELPER}. Installing AUR dependencies..."
+    $AUR_HELPER -S --noconfirm --needed eww-wayland adw-gtk-theme bibata-cursor-theme || true
+else
+    warn "No AUR helper (paru/yay) detected. AUR packages (eww-wayland, adw-gtk-theme, bibata-cursor-theme) were skipped. Please install them manually."
+fi
+ok "System and AUR dependencies installed."
 
 step "2. Copying Icarus wallpaper scripts & dynamic palette generator"
 sudo cp "${REPO_PATH}/configs/wallpaper/switcher.sh" /usr/local/bin/icarus-wallpaper-switch
