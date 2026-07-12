@@ -22,7 +22,7 @@ if [[ "${EUID}" -eq 0 ]]; then
 fi
 
 REPO_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ ! -f "${REPO_PATH}/icarus-assemble.sh" ]]; then
+if [[ ! -f "${REPO_PATH}/apply-extra.sh" ]]; then
     err "This script must be executed from inside the icarus-archos repository root."
     exit 1
 fi
@@ -35,7 +35,7 @@ sudo pacman -S --needed --noconfirm \
     brightnessctl playerctl fastfetch cava pavucontrol \
     jq pamixer libnotify sassc ffmpeg socat \
     starship eza bat zoxide fzf ripgrep fd gum \
-    nemo nwg-look swaync fuzzel wlsunset wmenu wget
+    nemo nwg-look swaync fuzzel wlsunset wmenu wget mpv
 
 # Detect AUR helper and install AUR-only dependencies (including macOS theme tools and extra apps)
 AUR_HELPER=""
@@ -50,7 +50,7 @@ if [[ -n "$AUR_HELPER" ]]; then
     $AUR_HELPER -S --noconfirm --needed \
         eww-wayland adw-gtk-theme bibata-cursor-theme \
         swayosd-git wl-clip-persist xfce-polkit waypaper \
-        helium-browser-bin discord spotify || true
+        helium-browser-bin discord spotify mpvpaper || true
 else
     warn "No AUR helper (paru/yay) detected. AUR packages (eww-wayland, adw-gtk-theme, bibata-cursor-theme, swayosd-git, wl-clip-persist, xfce-polkit, waypaper, helium-browser-bin, discord, spotify) were skipped. Please install them manually."
 fi
@@ -111,16 +111,43 @@ else
     warn "Aura Mew cursor source not found."
 fi
 
+step "3b. Installing SDDM and Plymouth Themes"
+
+# SDDM Astronaut Theme
+if [[ -d "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut" ]]; then
+    info "Installing SDDM Astronaut Theme..."
+    sudo mkdir -p /usr/share/sddm/themes/sddm-astronaut-theme
+    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/." /usr/share/sddm/themes/sddm-astronaut-theme/
+    sudo bash -c 'cat > /etc/sddm.conf.d/theme.conf <<EOF
+[Theme]
+Current=sddm-astronaut-theme
+EOF'
+    ok "SDDM Astronaut theme installed and configured."
+fi
+
+# Plymouth Theme
+if [[ -d "${REPO_PATH}/pkgs/plymouth-themes" ]]; then
+    info "Installing Plymouth Themes..."
+    sudo mkdir -p /usr/share/plymouth/themes
+    sudo cp -pr "${REPO_PATH}/pkgs/plymouth-themes/"* /usr/share/plymouth/themes/ || true
+    # Optionally set a theme if plymouth-set-default-theme is available
+    if command -v plymouth-set-default-theme &>/dev/null; then
+        sudo plymouth-set-default-theme -R ddh4r4m-arch || true
+        ok "Plymouth theme ddh4r4m-arch set."
+    fi
+fi
+
+
 step "4. Copying and caching new wallpapers"
 sudo mkdir -p /usr/share/backgrounds/icarus/references
 if [[ -d "${REPO_PATH}/configs/wallpaper/references" ]]; then
     sudo cp -rn "${REPO_PATH}/configs/wallpaper/references/." /usr/share/backgrounds/icarus/references/
 fi
-if [[ -d "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main" ]]; then
+if [[ -d "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers" ]]; then
     info "Copying WhiteSur dynamic wallpapers..."
     for W_DIR in 1080p 2k 4k src; do
-        if [[ -d "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main/${W_DIR}" ]]; then
-            sudo cp -rn "${REPO_PATH}/STEAL/EXTRA/WhiteSur-wallpapers-main/${W_DIR}/." /usr/share/backgrounds/icarus/references/ || true
+        if [[ -d "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers/${W_DIR}" ]]; then
+            sudo cp -rn "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers/${W_DIR}/." /usr/share/backgrounds/icarus/references/ || true
         fi
     done
 fi
