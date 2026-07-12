@@ -14,14 +14,15 @@
 ```
 
 # ARCHOS WORKSTATION — ICARUS-ARCHOS
-**The Absolute Peak of CachyOS & Hyprland Engineering**
+**The Absolute Peak of CachyOS, Vanilla Arch Linux & Hyprland Engineering**
 
-[![OS](https://img.shields.io/badge/OS-CachyOS-blue.svg?logo=arch-linux&logoColor=white&style=for-the-badge)](#)
+[![CachyOS](https://img.shields.io/badge/OS-CachyOS-blue.svg?logo=arch-linux&logoColor=white&style=for-the-badge)](#)
+[![Arch Linux](https://img.shields.io/badge/OS-Vanilla_Arch-blue.svg?logo=arch-linux&logoColor=white&style=for-the-badge)](#)
 [![Compositor](https://img.shields.io/badge/WM-Hyprland-orange.svg?style=for-the-badge)](#)
 [![Theme Engine](https://img.shields.io/badge/THEME-Archos_Glass-purple.svg?style=for-the-badge)](#)
 [![Status](https://img.shields.io/badge/Status-Fully_Weaponized-success.svg?style=for-the-badge)](#)
 
-*An automated, hyper-optimized workstation assembly toolkit that builds an ultra-premium, dynamically-themed graphical environment from scratch. Zero limits. Maximum visual performance.*
+*An automated, hyper-optimized workstation assembly toolkit that builds an ultra-premium, dynamically-themed graphical environment from scratch on both CachyOS and vanilla Arch Linux. Zero limits. Maximum visual performance.*
 
 ---
 
