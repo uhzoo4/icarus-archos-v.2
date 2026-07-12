@@ -65,7 +65,7 @@ step "3. Compiling and installing Archos themes & Mew cursor"
 # Archos GTK Theme
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" ]]; then
     info "Compiling Archos GTK Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && ./install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode )
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode )
     ok "Archos GTK theme compiled and installed."
 else
     warn "Archos GTK theme source not found."
@@ -74,7 +74,7 @@ fi
 # Archos Icon Theme
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-icon-theme" ]]; then
     info "Installing Archos Icon Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && ./install.sh -d /usr/share/icons -n Archos -t all )
+    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n Archos -t all )
     ok "Archos icon theme installed."
 else
     warn "Archos icon theme source not found."
