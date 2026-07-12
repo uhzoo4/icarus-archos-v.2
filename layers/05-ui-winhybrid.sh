@@ -23,7 +23,7 @@ pacman -S --noconfirm --needed \
     pipewire pipewire-alsa pipewire-pulse wireplumber \
     qt5-wayland qt6-wayland xdg-desktop-portal-hyprland polkit-kde-agent \
     ttf-jetbrains-mono-nerd noto-fonts noto-fonts-emoji grim slurp \
-    greetd greetd-tuigreet papirus-icon-theme
+    sddm qt6-5compat qt6-declarative qt6-svg qt6-multimedia-ffmpeg papirus-icon-theme
 
 log "Installing lock screen, idle management, and power menu..."
 pacman -S --noconfirm --needed \
@@ -226,27 +226,27 @@ EOF
 fi
 
 # ---------------------------------------------------------------------------
-# Display manager. Without this, boot lands at a plain TTY login and
-# Hyprland has to be started by hand every time — greetd + tuigreet gives an
-# actual login screen that launches Hyprland on successful auth. Both
-# packages are in Arch's official 'extra' repo, no AUR helper needed.
+# Display manager: SDDM with the Astronaut theme for graphical login.
 # ---------------------------------------------------------------------------
-log "Configuring greetd + tuigreet as the login manager..."
-mkdir -p /etc/greetd
-cat > /etc/greetd/config.toml <<'EOF'
-[terminal]
-vt = 1
+log "Configuring SDDM + Astronaut Theme as the login manager..."
 
-[default_session]
-command = "tuigreet --remember --remember-session --time --cmd Hyprland --theme 'border=darkgray;text=lightgray;prompt=lightgray;time=darkgray;action=blue;button=darkgray;container=black;input=white'"
-user = "greeter"
+# Install astronaut theme from STEAL folder
+if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master" ]]; then
+    mkdir -p /usr/share/sddm/themes/sddm-astronaut-theme
+    cp -r "${ICARUS_REPO_PATH}/STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master/"* /usr/share/sddm/themes/sddm-astronaut-theme/
+    
+    mkdir -p /etc/sddm.conf.d
+    cat > /etc/sddm.conf.d/10-theme.conf <<'EOF'
+[Theme]
+Current=sddm-astronaut-theme
 EOF
-
-if ! id greeter &>/dev/null; then
-    useradd -M -G video greeter
+else
+    fatal "SDDM Astronaut theme not found in STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master"
 fi
 
-systemctl enable greetd.service
+# Override any existing display manager symlink (e.g. from CachyOS defaults)
+systemctl disable greetd.service display-manager.service --force 2>/dev/null || true
+systemctl enable sddm.service --force
 
 # ---------------------------------------------------------------------------
 # Pipewire user services. Arch's pipewire packaging generally auto-enables
