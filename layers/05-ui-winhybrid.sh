@@ -168,6 +168,14 @@ else
     fatal "Missing configs/wallpaper/references/ in repo payload — the switcher would error on first use without it."
 fi
 
+# Automatically hunt for and extract wallpapers from the STEAL folder
+if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted" ]]; then
+    log "Hunting for stolen wallpapers in STEAL folder..."
+    # Find all images larger than 200KB (to filter out random icons/UI elements) and copy them in
+    find "${ICARUS_REPO_PATH}/STEAL/_extracted" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +200k -exec cp -n {} /usr/share/backgrounds/icarus/references/ \;
+    log "Stolen wallpapers successfully integrated."
+fi
+
 # ---------------------------------------------------------------------------
 # Dynamic palette generator + static theme defaults. The defaults matter:
 # eww, GTK, and Waybar all import files under ~/.config/icarus/theme/ that
