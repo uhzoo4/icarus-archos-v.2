@@ -39,11 +39,11 @@ try_install() {
 }
 
 # ---------------------------------------------------------------------------
-# 1. Chromium now — official repo, zero AUR dependency, available
+# 1. Chromium and Firefox now — official repo, zero AUR dependency, available
 #    immediately even if the AUR bootstrap below fails for any reason.
 # ---------------------------------------------------------------------------
-log "Installing Chromium (native, official repo)..."
-try_install chromium
+log "Installing Chromium and Firefox (native, official repo)..."
+try_install chromium firefox
 
 # ---------------------------------------------------------------------------
 # 1b. chafa — enables fastfetch to render images as ASCII/sixel in the
@@ -125,10 +125,10 @@ aur_install() {
 }
 
 # ---------------------------------------------------------------------------
-# 3. Chrome itself, via AUR now that paru exists.
+# 3. Google Chrome and Spotify, via AUR now that paru exists.
 # ---------------------------------------------------------------------------
-log "Installing Google Chrome (AUR)..."
-aur_install google-chrome
+log "Installing Google Chrome and Spotify (AUR)..."
+aur_install google-chrome spotify
 
 # ---------------------------------------------------------------------------
 # 3b. Theme packages referenced by configs/hypr/hyprland.conf and Layer 5's
