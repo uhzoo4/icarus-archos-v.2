@@ -15,6 +15,8 @@ REPO_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 step "1. Making sure installer scripts are executable"
 chmod +x "${REPO_PATH}/apply-extra.sh"
+chmod +x "${REPO_PATH}/update.sh"
+chmod +x "${REPO_PATH}/run.sh"
 chmod +x "${REPO_PATH}/configs/wallpaper/"*.sh || true
 chmod +x "${REPO_PATH}/tools/icarus-palette.py" || true
 ok "All scripts are executable."
@@ -23,7 +25,8 @@ step "2. Executing workspace configuration and compilation"
 bash "${REPO_PATH}/apply-extra.sh"
 
 step "3. Initializing Dynamic Material Color Palette"
-DEFAULT_WP="/usr/share/backgrounds/icarus/icarus-midnight.png"
+DEFAULT_WP="/usr/share/backgrounds/icarus/references/icarus-midnight.png"
+[[ -f "$DEFAULT_WP" ]] || DEFAULT_WP="/usr/share/backgrounds/icarus/icarus-midnight.png"
 if [[ -f "/usr/local/bin/icarus-palette" && -f "$DEFAULT_WP" ]]; then
     info "Running palette generator on default wallpaper..."
     /usr/local/bin/icarus-palette "$DEFAULT_WP" || true

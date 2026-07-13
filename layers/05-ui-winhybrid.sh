@@ -154,11 +154,11 @@ fi
 # Installing both to the same path would make one silently overwrite the
 # other depending on install order.
 # ---------------------------------------------------------------------------
-if [[ ! -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" ]]; then
-    fatal "Missing configs/wallpaper/icarus-midnight.png in repo payload."
+if [[ ! -f "${ICARUS_REPO_PATH}/configs/wallpaper/references/icarus-midnight.png" ]]; then
+    fatal "Missing configs/wallpaper/references/icarus-midnight.png in repo payload."
 fi
 install -d /usr/share/backgrounds/icarus
-install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
+install -m 0644 "${ICARUS_REPO_PATH}/configs/wallpaper/references/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
 
 if [[ -f "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" ]]; then
     install -m 0755 "${ICARUS_REPO_PATH}/configs/wallpaper/icarus-wallpaper.sh" /usr/local/bin/icarus-wallpaper
@@ -187,10 +187,55 @@ else
     fatal "Missing configs/wallpaper/references/ in repo payload — the switcher would error on first use without it."
 fi
 
-# Automatically hunt for and extract wallpapers from the STEAL folder
-if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted" ]]; then
+# Automatically hunt, rename, and copy static & live wallpapers from the STEAL folder
+if [[ -d "${ICARUS_REPO_PATH}/STEAL" ]]; then
     log "Hunting for stolen wallpapers in STEAL folder..."
-    find "${ICARUS_REPO_PATH}/STEAL/_extracted" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +200k -exec cp -n {} /usr/share/backgrounds/icarus/references/ \;
+    # 1. Copy static images (+100k) and handle generic collisions (bg.jpg, etc.)
+    find "${ICARUS_REPO_PATH}/STEAL" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +100k 2>/dev/null | while read -r img_file; do
+        basename=$(basename "$img_file")
+        if [[ "$basename" == "bg.jpg" || "$basename" == "bg.png" || "$basename" == "background.jpg" || "$basename" == "background.png" ]]; then
+            parent=$(basename "$(dirname "$img_file")")
+            new_name="${parent}-${basename}"
+        else
+            new_name="$basename"
+        fi
+        cp -n "$img_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
+
+    # 2. Copy animated gifs from assets
+    find "${ICARUS_REPO_PATH}/STEAL" -type f -name "*.gif" 2>/dev/null | while read -r gif_file; do
+        basename=$(basename "$gif_file")
+        if [[ "$basename" != *-live.gif ]]; then
+            stem="${basename%.gif}"
+            new_name="${stem}-live.gif"
+        else
+            new_name="$basename"
+        fi
+        cp -n "$gif_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
+
+    # 3. Copy video wallpapers (mp4, webm, mkv) and map generic "bg.mp4" correctly
+    find "${ICARUS_REPO_PATH}/STEAL" -type f \( -name "*.mp4" -o -name "*.webm" -o -name "*.mkv" \) 2>/dev/null | while read -r video_file; do
+        basename=$(basename "$video_file")
+        parent=$(basename "$(dirname "$video_file")")
+        if [[ "$basename" == "bg.mp4" || "$basename" == "bg.webm" || "$basename" == "bg.mkv" || "$parent" == "assets" ]]; then
+            grandparent=$(basename "$(dirname "$(dirname "$video_file")")")
+            if [[ "$grandparent" == "themes" ]]; then
+                new_name="qylock-${parent}-live.mp4"
+            else
+                new_name="${parent}-live.mp4"
+            fi
+        else
+            if [[ "$basename" != *-live.* ]]; then
+                stem="${basename%.*}"
+                ext="${basename##*.}"
+                new_name="${stem}-live.${ext}"
+            else
+                new_name="$basename"
+            fi
+        fi
+        cp -n "$video_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
     log "Stolen wallpapers successfully integrated."
 fi
 

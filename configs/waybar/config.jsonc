@@ -62,10 +62,10 @@
             "headphone": "󰋋",
             "hands-free": "󰋎",
             "headset": "󰋎",
-            "phone": "",
-            "portable": "",
-            "car": "",
-            "default": ["", "", ""]
+            "phone": "",
+            "portable": "",
+            "car": "",
+            "default": ["󰕿", "󰖀", "󰕾"]
         },
         "on-click": "pavucontrol",
         "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
@@ -73,7 +73,7 @@
         "tooltip-format": "{desc}: {volume}%"
     },
     "network": {
-        "format-wifi": "  {essid}",
+        "format-wifi": "󰤨 {essid}",
         "format-ethernet": "󰈀 Link",
         "format-disconnected": "󰤭 Off",
         "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr}/{cidr}",

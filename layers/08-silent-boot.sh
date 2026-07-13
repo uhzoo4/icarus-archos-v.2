@@ -140,13 +140,13 @@ fi
 # boot graphics, which works on any hardware without needing a
 # custom-drawn theme asset.
 # ---------------------------------------------------------------------------
-log "Setting Plymouth theme to 'circuit' from STEAL folder..."
-if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted/plymouth/plymouth-themes-master/pack_1/circuit" ]]; then
+log "Setting Plymouth theme to 'circuit'..."
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/pack_1/circuit" ]]; then
     mkdir -p /usr/share/plymouth/themes/circuit
-    cp -r "${ICARUS_REPO_PATH}/STEAL/_extracted/plymouth/plymouth-themes-master/pack_1/circuit/"* /usr/share/plymouth/themes/circuit/
+    cp -r "${ICARUS_REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/pack_1/circuit/"* /usr/share/plymouth/themes/circuit/
     plymouth-set-default-theme -R circuit || warn "plymouth-set-default-theme failed — continuing, initramfs regen will still pick up the plymouth hook."
 else
-    warn "Circuit theme not found in STEAL. Falling back to bgrt."
+    warn "Circuit theme not found in pkgs. Falling back to bgrt."
     plymouth-set-default-theme -R bgrt || warn "plymouth-set-default-theme failed."
 fi
 

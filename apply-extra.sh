@@ -71,7 +71,7 @@ if [[ -d "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" ]]; then
     info "Compiling Archos GTK Theme..."
     ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n Archos --silent-mode || true )
     info "Compiling original WhiteSur GTK Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n WhiteSur --silent-mode || true )
+    ( cd "${REPO_PATH}/pkgs/themes/WhiteSur-gtk-theme" && sudo bash install.sh -d /usr/share/themes -l -c dark -n WhiteSur --silent-mode || true )
     ok "GTK themes compiled and installed."
 else
     warn "GTK theme source not found."
@@ -82,7 +82,7 @@ if [[ -d "${REPO_PATH}/pkgs/themes/Archos-icon-theme" ]]; then
     info "Installing Archos Icon Theme..."
     ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n Archos -t all || true )
     info "Installing original WhiteSur Icon Theme..."
-    ( cd "${REPO_PATH}/pkgs/themes/Archos-icon-theme" && sudo bash install.sh -d /usr/share/icons -n WhiteSur -t all || true )
+    ( cd "${REPO_PATH}/pkgs/themes/WhiteSur-icon-theme" && sudo bash install.sh -d /usr/share/icons -n WhiteSur -t all || true )
     ok "Icon themes installed."
 else
     warn "Icon theme source not found."
@@ -95,7 +95,7 @@ if [[ -d "${REPO_PATH}/pkgs/themes/Archos-cursors" ]]; then
     sudo cp -pr "${REPO_PATH}/pkgs/themes/Archos-cursors/dist/." /usr/share/icons/Archos-cursors/
     info "Installing original WhiteSur Cursors..."
     sudo mkdir -p /usr/share/icons/WhiteSur-cursors
-    sudo cp -pr "${REPO_PATH}/pkgs/themes/Archos-cursors/dist/." /usr/share/icons/WhiteSur-cursors/
+    sudo cp -pr "${REPO_PATH}/pkgs/themes/WhiteSur-cursors/dist/." /usr/share/icons/WhiteSur-cursors/
     ok "Cursor themes installed."
 else
     warn "Cursor themes source not found."
@@ -114,10 +114,10 @@ fi
 step "3b. Installing SDDM and Plymouth Themes"
 
 # SDDM Astronaut Theme
-if [[ -d "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut" ]]; then
+if [[ -d "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master" ]]; then
     info "Installing SDDM Astronaut Theme..."
     sudo mkdir -p /usr/share/sddm/themes/sddm-astronaut-theme
-    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/." /usr/share/sddm/themes/sddm-astronaut-theme/
+    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master/." /usr/share/sddm/themes/sddm-astronaut-theme/
     sudo bash -c 'cat > /etc/sddm.conf.d/theme.conf <<EOF
 [Theme]
 Current=sddm-astronaut-theme
@@ -125,15 +125,30 @@ EOF'
     ok "SDDM Astronaut theme installed and configured."
 fi
 
+# SDDM Silent Theme
+if [[ -d "${REPO_PATH}/pkgs/sddm-themes/silent-sddm/SilentSDDM-main" ]]; then
+    info "Installing SDDM Silent Theme..."
+    sudo mkdir -p /usr/share/sddm/themes/silent-sddm
+    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/silent-sddm/SilentSDDM-main/." /usr/share/sddm/themes/silent-sddm/
+    ok "SDDM Silent theme installed."
+fi
+
 # Plymouth Theme
-if [[ -d "${REPO_PATH}/pkgs/plymouth-themes" ]]; then
+if [[ -d "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master" ]]; then
     info "Installing Plymouth Themes..."
     sudo mkdir -p /usr/share/plymouth/themes
-    sudo cp -pr "${REPO_PATH}/pkgs/plymouth-themes/"* /usr/share/plymouth/themes/ || true
+    for pack in pack_1 pack_2 pack_3 pack_4; do
+        if [[ -d "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/${pack}" ]]; then
+            sudo cp -pr "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/${pack}/"* /usr/share/plymouth/themes/ || true
+        fi
+    done
+    if [[ -d "${REPO_PATH}/configs/plymouth/icarus-ring" ]]; then
+        sudo cp -pr "${REPO_PATH}/configs/plymouth/icarus-ring" /usr/share/plymouth/themes/
+    fi
     # Optionally set a theme if plymouth-set-default-theme is available
     if command -v plymouth-set-default-theme &>/dev/null; then
-        sudo plymouth-set-default-theme -R ddh4r4m-arch || true
-        ok "Plymouth theme ddh4r4m-arch set."
+        sudo plymouth-set-default-theme -R circuit || true
+        ok "Plymouth theme circuit set."
     fi
 fi
 
@@ -142,6 +157,8 @@ step "4. Copying and caching new wallpapers"
 sudo mkdir -p /usr/share/backgrounds/icarus/references
 if [[ -d "${REPO_PATH}/configs/wallpaper/references" ]]; then
     sudo cp -rn "${REPO_PATH}/configs/wallpaper/references/." /usr/share/backgrounds/icarus/references/
+    # Ensure the root fallback static image is installed
+    sudo cp -f "${REPO_PATH}/configs/wallpaper/references/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
 fi
 if [[ -d "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers" ]]; then
     info "Copying WhiteSur dynamic wallpapers..."
@@ -152,6 +169,58 @@ if [[ -d "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers" ]]; then
     done
 fi
 ok "Wallpapers integrated into references."
+
+# Hunt, rename, and copy static & live wallpapers from the STEAL folder
+if [[ -d "${REPO_PATH}/STEAL" ]]; then
+    info "Hunting for stolen wallpapers in STEAL folder..."
+    # 1. Copy static images (+100k) and handle generic collisions (bg.jpg, etc.)
+    find "${REPO_PATH}/STEAL" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +100k 2>/dev/null | while read -r img_file; do
+        basename=$(basename "$img_file")
+        if [[ "$basename" == "bg.jpg" || "$basename" == "bg.png" || "$basename" == "background.jpg" || "$basename" == "background.png" ]]; then
+            parent=$(basename "$(dirname "$img_file")")
+            new_name="${parent}-${basename}"
+        else
+            new_name="$basename"
+        fi
+        sudo cp -n "$img_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
+
+    # 2. Copy animated gifs
+    find "${REPO_PATH}/STEAL" -type f -name "*.gif" 2>/dev/null | while read -r gif_file; do
+        basename=$(basename "$gif_file")
+        if [[ "$basename" != *-live.gif ]]; then
+            stem="${basename%.gif}"
+            new_name="${stem}-live.gif"
+        else
+            new_name="$basename"
+        fi
+        sudo cp -n "$gif_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
+
+    # 3. Copy video wallpapers (mp4, webm, mkv)
+    find "${REPO_PATH}/STEAL" -type f \( -name "*.mp4" -o -name "*.webm" -o -name "*.mkv" \) 2>/dev/null | while read -r video_file; do
+        basename=$(basename "$video_file")
+        parent=$(basename "$(dirname "$video_file")")
+        if [[ "$basename" == "bg.mp4" || "$basename" == "bg.webm" || "$basename" == "bg.mkv" || "$parent" == "assets" ]]; then
+            grandparent=$(basename "$(dirname "$(dirname "$video_file")")")
+            if [[ "$grandparent" == "themes" ]]; then
+                new_name="qylock-${parent}-live.mp4"
+            else
+                new_name="${parent}-live.mp4"
+            fi
+        else
+            if [[ "$basename" != *-live.* ]]; then
+                stem="${basename%.*}"
+                ext="${basename##*.}"
+                new_name="${stem}-live.${ext}"
+            else
+                new_name="$basename"
+            fi
+        fi
+        sudo cp -n "$video_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+    done
+fi
+
 
 step "5. Caching Firefox Archos theme"
 if [[ -d "${REPO_PATH}/pkgs/themes/Archos-firefox-theme" ]]; then

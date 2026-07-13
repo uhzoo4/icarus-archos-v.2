@@ -21,10 +21,12 @@ fi
 cd "$REPO_PATH" || { err "Failed to cd into $REPO_PATH"; exit 1; }
 
 step "1. Fetching latest changes from GitHub"
-info "Resetting any local changes..."
-git reset --hard HEAD || warn "Could not reset local changes, proceeding anyway."
+info "Stashing local changes to prevent loss..."
+git stash || warn "No local modifications to stash, proceeding."
 info "Pulling latest master branch..."
 git pull origin main || git pull origin master || { err "Failed to pull from GitHub."; exit 1; }
+info "Re-applying stashed changes..."
+git stash pop || warn "No stashed changes to apply."
 ok "Repository is up to date."
 
 step "2. Making scripts executable"
