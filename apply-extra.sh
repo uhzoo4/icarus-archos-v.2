@@ -180,7 +180,7 @@ ok "Wallpapers integrated into references."
 # Hunt, rename, and copy static & live wallpapers from the STEAL folder
 if [[ -d "${REPO_PATH}/STEAL" ]]; then
     info "Hunting for stolen wallpapers in STEAL folder..."
-    local count=108
+    count=108
     while read -r file; do
         ext="${file##*.}"
         ext="${ext,,}"
