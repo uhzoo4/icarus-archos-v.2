@@ -266,7 +266,7 @@ def main():
         
     image_path = args.image
     _, ext = os.path.splitext(image_path.lower())
-    if ext in ('.mp4', '.webm', '.mkv'):
+    if ext in ('.mp4', '.webm', '.mkv', '.gif'):
         print(f"Detected video wallpaper: {image_path}. Extracting representative frame...")
         extracted = extract_video_frame(image_path)
         if extracted:

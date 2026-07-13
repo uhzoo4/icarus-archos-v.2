@@ -25,7 +25,7 @@ step "2. Executing workspace configuration and compilation"
 bash "${REPO_PATH}/apply-extra.sh"
 
 step "3. Initializing Dynamic Material Color Palette"
-DEFAULT_WP="/usr/share/backgrounds/icarus/references/icarus-midnight.png"
+DEFAULT_WP="/usr/share/backgrounds/icarus/references/84.png"
 [[ -f "$DEFAULT_WP" ]] || DEFAULT_WP="/usr/share/backgrounds/icarus/icarus-midnight.png"
 if [[ -f "/usr/local/bin/icarus-palette" && -f "$DEFAULT_WP" ]]; then
     info "Running palette generator on default wallpaper..."

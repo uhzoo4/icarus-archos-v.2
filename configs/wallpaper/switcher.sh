@@ -87,14 +87,21 @@ apply_wallpaper() {
         rendered_file="$file"
         notify-send "Icarus live wallpaper" "$(basename "$file")" 2>/dev/null || true
     else
-        swaybg -i "$palette_source" -m fill &
+        local actual_bg="$palette_source"
+        if is_live_media "$palette_source"; then
+            icarus-palette "$palette_source"
+            actual_bg="/tmp/icarus-video-frame.png"
+        fi
+        swaybg -i "$actual_bg" -m fill &
         if is_live_media "$file"; then
             notify-send "Icarus wallpaper" "mpvpaper is unavailable; using the static companion image." 2>/dev/null || true
         fi
     fi
 
     write_state "$renderer" "$rendered_file"
-    icarus-palette "$palette_source"
+    if ! is_live_media "$palette_source"; then
+        icarus-palette "$palette_source"
+    fi
     killall -SIGUSR2 waybar 2>/dev/null || true
     eww reload 2>/dev/null || true
 }
@@ -103,12 +110,18 @@ choose_random_icarus_scene() {
     local -a scenes=()
     local file
     shopt -s nullglob
-    for file in "$WALLPAPER_DIR"/icarus-*.png "$WALLPAPER_DIR"/icarus-*-live.gif "$WALLPAPER_DIR"/icarus-*-live.mp4; do
-        [[ -f "$file" ]] && scenes+=("$file")
+    for file in "$WALLPAPER_DIR"/*; do
+        if [[ -f "$file" ]]; then
+            case "${file,,}" in
+                *.png|*.jpg|*.jpeg|*.gif|*.mp4|*.webm|*.mkv)
+                    scenes+=("$file")
+                    ;;
+            esac
+        fi
     done
     shopt -u nullglob
 
-    (( ${#scenes[@]} > 0 )) || { echo "No original Icarus scenes found." >&2; exit 1; }
+    (( ${#scenes[@]} > 0 )) || { echo "No wallpapers found in $WALLPAPER_DIR." >&2; exit 1; }
     printf '%s\n' "${scenes[@]}" | shuf -n 1
 }
 

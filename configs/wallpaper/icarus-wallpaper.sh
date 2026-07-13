@@ -8,8 +8,8 @@
 # on this run. swaybg is installed in Layer 5 unconditionally, so the
 # fallback path never depends on anything that can fail.
 #
-LIVE_VIDEO="/usr/share/backgrounds/icarus/references/icarus-event-horizon-live.gif"
-STATIC_IMG="/usr/share/backgrounds/icarus/references/icarus-midnight.png"
+LIVE_VIDEO="/usr/share/backgrounds/icarus/references/84-live.gif"
+STATIC_IMG="/usr/share/backgrounds/icarus/references/84.png"
 STATE_FILE="${HOME}/.config/icarus/wallpaper.sh"
 
 # A manual selection made with icarus-wallpaper-switch survives logout and

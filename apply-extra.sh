@@ -158,7 +158,7 @@ sudo mkdir -p /usr/share/backgrounds/icarus/references
 if [[ -d "${REPO_PATH}/configs/wallpaper/references" ]]; then
     sudo cp -rn "${REPO_PATH}/configs/wallpaper/references/." /usr/share/backgrounds/icarus/references/
     # Ensure the root fallback static image is installed
-    sudo cp -f "${REPO_PATH}/configs/wallpaper/references/icarus-midnight.png" /usr/share/backgrounds/icarus/icarus-midnight.png
+    sudo cp -f "${REPO_PATH}/configs/wallpaper/references/84.png" /usr/share/backgrounds/icarus/icarus-midnight.png
 fi
 if [[ -d "${REPO_PATH}/pkgs/themes/WhiteSur-wallpapers" ]]; then
     info "Copying WhiteSur dynamic wallpapers..."
@@ -173,52 +173,18 @@ ok "Wallpapers integrated into references."
 # Hunt, rename, and copy static & live wallpapers from the STEAL folder
 if [[ -d "${REPO_PATH}/STEAL" ]]; then
     info "Hunting for stolen wallpapers in STEAL folder..."
-    # 1. Copy static images (+100k) and handle generic collisions (bg.jpg, etc.)
-    find "${REPO_PATH}/STEAL" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" \) -size +100k 2>/dev/null | while read -r img_file; do
-        basename=$(basename "$img_file")
-        if [[ "$basename" == "bg.jpg" || "$basename" == "bg.png" || "$basename" == "background.jpg" || "$basename" == "background.png" ]]; then
-            parent=$(basename "$(dirname "$img_file")")
-            new_name="${parent}-${basename}"
+    local count=108
+    while read -r file; do
+        ext="${file##*.}"
+        ext="${ext,,}"
+        if [[ "$ext" == "gif" || "$ext" == "mp4" || "$ext" == "webm" || "$ext" == "mkv" ]]; then
+            new_name="${count}-live.${ext}"
         else
-            new_name="$basename"
+            new_name="${count}.${ext}"
         fi
-        sudo cp -n "$img_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
-    done
-
-    # 2. Copy animated gifs
-    find "${REPO_PATH}/STEAL" -type f -name "*.gif" 2>/dev/null | while read -r gif_file; do
-        basename=$(basename "$gif_file")
-        if [[ "$basename" != *-live.gif ]]; then
-            stem="${basename%.gif}"
-            new_name="${stem}-live.gif"
-        else
-            new_name="$basename"
-        fi
-        sudo cp -n "$gif_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
-    done
-
-    # 3. Copy video wallpapers (mp4, webm, mkv)
-    find "${REPO_PATH}/STEAL" -type f \( -name "*.mp4" -o -name "*.webm" -o -name "*.mkv" \) 2>/dev/null | while read -r video_file; do
-        basename=$(basename "$video_file")
-        parent=$(basename "$(dirname "$video_file")")
-        if [[ "$basename" == "bg.mp4" || "$basename" == "bg.webm" || "$basename" == "bg.mkv" || "$parent" == "assets" ]]; then
-            grandparent=$(basename "$(dirname "$(dirname "$video_file")")")
-            if [[ "$grandparent" == "themes" ]]; then
-                new_name="qylock-${parent}-live.mp4"
-            else
-                new_name="${parent}-live.mp4"
-            fi
-        else
-            if [[ "$basename" != *-live.* ]]; then
-                stem="${basename%.*}"
-                ext="${basename##*.}"
-                new_name="${stem}-live.${ext}"
-            else
-                new_name="$basename"
-            fi
-        fi
-        sudo cp -n "$video_file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
-    done
+        sudo cp -n "$file" "/usr/share/backgrounds/icarus/references/${new_name}" 2>/dev/null || true
+        count=$((count + 1))
+    done < <(find "${REPO_PATH}/STEAL" -type f \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.jpeg" -o -iname "*.webp" -o -iname "*.gif" -o -iname "*.mp4" -o -iname "*.webm" -o -iname "*.mkv" \) 2>/dev/null)
 fi
 
 
