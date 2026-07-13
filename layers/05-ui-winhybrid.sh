@@ -325,10 +325,10 @@ fi
 # ---------------------------------------------------------------------------
 log "Configuring SDDM + Astronaut Theme as the login manager..."
 
-# Install astronaut theme from STEAL folder
-if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master" ]]; then
+# Install astronaut theme from pkgs folder
+if [[ -d "${ICARUS_REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master" ]]; then
     mkdir -p /usr/share/sddm/themes/sddm-astronaut-theme
-    cp -r "${ICARUS_REPO_PATH}/STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master/"* /usr/share/sddm/themes/sddm-astronaut-theme/
+    cp -r "${ICARUS_REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master/"* /usr/share/sddm/themes/sddm-astronaut-theme/
     
     mkdir -p /etc/sddm.conf.d
     cat > /etc/sddm.conf.d/10-theme.conf <<'EOF'
@@ -336,7 +336,7 @@ if [[ -d "${ICARUS_REPO_PATH}/STEAL/_extracted/sddm-astronaut/sddm-astronaut-the
 Current=sddm-astronaut-theme
 EOF
 else
-    fatal "SDDM Astronaut theme not found in STEAL/_extracted/sddm-astronaut/sddm-astronaut-theme-master"
+    fatal "SDDM Astronaut theme not found in pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master"
 fi
 
 # Override any existing display manager symlink (e.g. from CachyOS defaults)
