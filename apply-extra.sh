@@ -152,6 +152,13 @@ if [[ -d "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master" ]]; then
     fi
 fi
 
+# Install local custom fonts
+if [[ -d "${REPO_PATH}/configs/fonts" ]]; then
+    info "Installing custom local fonts..."
+    sudo mkdir -p /usr/share/fonts/TTF
+    sudo cp -rn "${REPO_PATH}/configs/fonts/." /usr/share/fonts/TTF/
+    fc-cache -f &>/dev/null || true
+fi
 
 step "4. Copying and caching new wallpapers"
 sudo mkdir -p /usr/share/backgrounds/icarus/references
@@ -208,9 +215,9 @@ EOF
 cp "${HOME}/.config/gtk-3.0/settings.ini" "${HOME}/.config/gtk-4.0/settings.ini"
 ok "User GTK parameters written."
 
-step "6b. Copying user configurations (hypr, waybar, kitty, rofi, dunst, fastfetch, cava, wlogout, eww)"
+step "6b. Copying user configurations (hypr, waybar, kitty, rofi, dunst, fastfetch, cava, wlogout, eww, nvim)"
 mkdir -p "${HOME}/.config"
-for CFG_DIR in hypr waybar kitty rofi dunst fastfetch cava wlogout eww; do
+for CFG_DIR in hypr waybar kitty rofi dunst fastfetch cava wlogout eww nvim; do
     if [[ -d "${REPO_PATH}/configs/${CFG_DIR}" ]]; then
         info "Copying ${CFG_DIR} configuration..."
         # Backup existing config if it's not a symlink and already exists

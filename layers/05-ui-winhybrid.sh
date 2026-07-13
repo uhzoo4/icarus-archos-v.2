@@ -135,6 +135,21 @@ else
     fatal "Missing configs/eww/ in repo payload."
 fi
 
+# --- Neovim config ---
+if [[ -d "${ICARUS_REPO_PATH}/configs/nvim" ]]; then
+    log "Installing Neovim configurations..."
+    mkdir -p /etc/skel/.config/nvim
+    cp -r "${ICARUS_REPO_PATH}/configs/nvim/." /etc/skel/.config/nvim/
+fi
+
+# --- Install local custom fonts ---
+if [[ -d "${ICARUS_REPO_PATH}/configs/fonts" ]]; then
+    log "Installing local custom fonts..."
+    mkdir -p /usr/share/fonts/TTF
+    cp -r "${ICARUS_REPO_PATH}/configs/fonts/"* /usr/share/fonts/TTF/
+    fc-cache -f &>/dev/null || true
+fi
+
 # --- Rofi themes (system-wide default + skel copies of all variants) ---
 if [[ -f "${ICARUS_REPO_PATH}/configs/rofi/icarus-spotlight.rasi" ]]; then
     log "Installing rofi themes..."
