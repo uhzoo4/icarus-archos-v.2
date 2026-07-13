@@ -97,6 +97,16 @@ if [[ -d "${ICARUS_REPO_PATH}/configs/hypr/scripts" ]]; then
 else
     fatal "Missing configs/hypr/scripts/ in repo payload."
 fi
+
+# Install HyDE features (animations, shaders, workflows)
+log "Installing HyDE dynamic features (animations, shaders, workflows)..."
+for DIR in animations shaders workflows; do
+    if [[ -d "${ICARUS_REPO_PATH}/configs/hypr/${DIR}" ]]; then
+        mkdir -p "/etc/skel/.config/hypr/${DIR}"
+        cp -r "${ICARUS_REPO_PATH}/configs/hypr/${DIR}/." "/etc/skel/.config/hypr/${DIR}/"
+    fi
+done
+
 require_config "${ICARUS_REPO_PATH}/configs/waybar/config.jsonc" /etc/skel/.config/waybar/config.jsonc
 require_config "${ICARUS_REPO_PATH}/configs/waybar/style.css" /etc/skel/.config/waybar/style.css
 require_config "${ICARUS_REPO_PATH}/configs/dunst/dunstrc" /etc/skel/.config/dunst/dunstrc
