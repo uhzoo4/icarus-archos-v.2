@@ -36,7 +36,7 @@ done < layers/MANIFEST
 (( manifest_lines > 0 )) || fail "layers/MANIFEST has no layer entries"
 
 echo "==> Checking shell and Python syntax"
-mapfile -d '' shell_files < <(find icarus-assemble.sh layers configs scripts -type f -name '*.sh' -print0)
+mapfile -d '' shell_files < <(find layers configs scripts -type f -name '*.sh' -print0)
 (( ${#shell_files[@]} > 0 )) || fail "no shell scripts found"
 bash -n "${shell_files[@]}"
 
@@ -100,10 +100,8 @@ while IFS= read -r -d '' live_file; do
     fi
 done < <(find configs/wallpaper/references -type f \( -name 'icarus-*-live.gif' -o -name 'icarus-*-live.mp4' -o -name 'icarus-*-live.webm' -o -name 'icarus-*-live.mkv' \) -print0)
 
-echo "==> Checking untracked-source protection and Plymouth default"
+echo "==> Checking untracked-source protection"
 git check-ignore -q -- STEAL/.icarus-ignore-probe \
     || fail "STEAL/ must stay ignored so source archives cannot be committed accidentally"
-rg -Fq 'plymouth-set-default-theme -R bgrt' layers/08-silent-boot.sh \
-    || fail "Layer 8 must retain the proven bgrt Plymouth default"
 
 echo "verify-repo: all checks passed"

@@ -111,46 +111,8 @@ else
     warn "Aura Mew cursor source not found."
 fi
 
-step "3b. Installing SDDM and Plymouth Themes"
-
-# SDDM Astronaut Theme
-if [[ -d "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master" ]]; then
-    info "Installing SDDM Astronaut Theme..."
-    sudo mkdir -p /usr/share/sddm/themes/sddm-astronaut-theme
-    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/sddm-astronaut/sddm-astronaut-theme-master/." /usr/share/sddm/themes/sddm-astronaut-theme/
-    sudo bash -c 'cat > /etc/sddm.conf.d/theme.conf <<EOF
-[Theme]
-Current=sddm-astronaut-theme
-EOF'
-    ok "SDDM Astronaut theme installed and configured."
-fi
-
-# SDDM Silent Theme
-if [[ -d "${REPO_PATH}/pkgs/sddm-themes/silent-sddm/SilentSDDM-main" ]]; then
-    info "Installing SDDM Silent Theme..."
-    sudo mkdir -p /usr/share/sddm/themes/silent-sddm
-    sudo cp -pr "${REPO_PATH}/pkgs/sddm-themes/silent-sddm/SilentSDDM-main/." /usr/share/sddm/themes/silent-sddm/
-    ok "SDDM Silent theme installed."
-fi
-
-# Plymouth Theme
-if [[ -d "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master" ]]; then
-    info "Installing Plymouth Themes..."
-    sudo mkdir -p /usr/share/plymouth/themes
-    for pack in pack_1 pack_2 pack_3 pack_4; do
-        if [[ -d "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/${pack}" ]]; then
-            sudo cp -pr "${REPO_PATH}/pkgs/plymouth-themes/plymouth-themes-master/${pack}/"* /usr/share/plymouth/themes/ || true
-        fi
-    done
-    if [[ -d "${REPO_PATH}/configs/plymouth/icarus-ring" ]]; then
-        sudo cp -pr "${REPO_PATH}/configs/plymouth/icarus-ring" /usr/share/plymouth/themes/
-    fi
-    # Optionally set a theme if plymouth-set-default-theme is available
-    if command -v plymouth-set-default-theme &>/dev/null; then
-        sudo plymouth-set-default-theme -R circuit || true
-        ok "Plymouth theme circuit set."
-    fi
-fi
+step "3b. Installing SDDM and Plymouth Themes [SKIPPED]"
+info "Skipped SDDM and Plymouth theme installation (system-level/bootloader configurations)."
 
 # Install local custom fonts
 if [[ -d "${REPO_PATH}/configs/fonts" ]]; then
