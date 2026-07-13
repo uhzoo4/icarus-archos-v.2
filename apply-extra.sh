@@ -243,7 +243,20 @@ if [[ -d "${REPO_PATH}/configs/theme" ]]; then
         mv "${HOME}/.config/icarus/theme" "${HOME}/.config/icarus/theme.bak.$(date +%s)" || true
     fi
     mkdir -p "${HOME}/.config/icarus/theme"
-    cp -r "${REPO_PATH}/configs/theme/." "${HOME}/.config/icarus/theme/"
+fi
+
+# Append welcome animation to local .bashrc if not already present
+if ! grep -q "welcome.sh" "${HOME}/.bashrc" 2>/dev/null; then
+    info "Adding welcome.sh to ~/.bashrc..."
+    cat >> "${HOME}/.bashrc" << 'EOF'
+
+# Icarus-ArchOS — animated welcome screen & system info on terminal open
+if [[ -f "${HOME}/.config/hypr/scripts/welcome.sh" ]]; then
+    bash "${HOME}/.config/hypr/scripts/welcome.sh"
+elif command -v fastfetch &>/dev/null; then
+    fastfetch
+fi
+EOF
 fi
 
 ok "User configurations successfully updated and copied to ~/.config/."

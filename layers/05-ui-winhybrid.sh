@@ -304,15 +304,17 @@ EOF
 done
 
 # ---------------------------------------------------------------------------
-# Fastfetch on terminal open — runs every time a new interactive bash
+# Welcome Animation on terminal open — runs every time a new interactive bash
 # session starts so the Icarus branding is the first thing you see.
 # ---------------------------------------------------------------------------
-log "Adding fastfetch to shell startup..."
-if ! grep -q "fastfetch" /etc/skel/.bashrc 2>/dev/null; then
+log "Adding welcome animation to shell startup..."
+if ! grep -q "welcome.sh" /etc/skel/.bashrc 2>/dev/null; then
     cat >> /etc/skel/.bashrc << 'EOF'
 
-# Icarus-ArchOS — show system info on terminal open
-if command -v fastfetch &>/dev/null; then
+# Icarus-ArchOS — animated welcome screen & system info on terminal open
+if [[ -f "${HOME}/.config/hypr/scripts/welcome.sh" ]]; then
+    bash "${HOME}/.config/hypr/scripts/welcome.sh"
+elif command -v fastfetch &>/dev/null; then
     fastfetch
 fi
 EOF
